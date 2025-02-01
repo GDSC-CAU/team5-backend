@@ -6,6 +6,7 @@ import org.gdsccau.team5.safebridge.domain.demo.dto.DemoDto;
 import org.gdsccau.team5.safebridge.domain.demo.service.DemoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,7 +23,12 @@ public class DemoController {
   }
 
   @GetMapping
-  public List<DemoDto> getAllUsers() {
+  public List<DemoDto> getAllDemos() {
     return demoService.getAllDemo();
+  }
+
+  @GetMapping("/{id}")
+  public DemoDto getDemoById(@PathVariable Long id) {
+    return demoService.getUserById(id);
   }
 }
