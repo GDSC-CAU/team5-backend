@@ -28,6 +28,8 @@ public class ChatService {
     private final ChatRepository chatRepository;
     private final RedisTemplate<String, String> redisTemplate;
 
+    private static final Long weight = 1000L;
+
     public Map<Long, TeamListDto> refreshRedisValue(final Chat chat, final Long teamId) {
         /*
          1. UserId + TeamId로 Key를 만들고 inRoom 값을 확인해 채팅방에 있는지 없는지 검사한다.
@@ -39,11 +41,14 @@ public class ChatService {
         List<Long> userIds = userTeamCheckService.findAllUserIdByTeamId(teamId);
 
         for (Long userId : userIds) {
-            if (updateInRoom("userId:" + userId + "teamId:" + teamId + "inRoom") == 1) {
+            String inRoomKey = "userId:" + userId + "teamId:" + teamId + "inRoom";
+            if (getInRoom(inRoomKey) == 1) {
                 continue;
             }
-            int unReadMessage = updateUnReadMessage("userId:" + userId + "teamId:" + teamId + "unReadMessage");
-            updateZSet("userId:" + userId + "Team", teamId, chat, unReadMessage);
+            String unReadMessageKey = "userId:" + userId + "teamId:" + teamId + "unReadMessage";
+            int unReadMessage = updateUnReadMessage(unReadMessageKey);
+            String zSetKey = "userId:" + userId + "team";
+            updateZSet(zSetKey, teamId, chat, unReadMessage);
 
             results.put(userId, createTeamListDto(teamId, chat.getText(), chat.getCreatedAt()));
         }
@@ -57,7 +62,7 @@ public class ChatService {
         return chatRepository.save(chat);
     }
 
-    private int updateInRoom(final String inRoomKey) {
+    private int getInRoom(final String inRoomKey) {
         String inRoomValue = redisTemplate.opsForValue().get(inRoomKey);
         return inRoomValue != null ? Integer.parseInt(inRoomValue) : 0;
     }
@@ -72,7 +77,7 @@ public class ChatService {
         long score = chat.getCreatedAt()
                 .atZone(ZoneId.of("Asia/Seoul"))
                 .toInstant()
-                .toEpochMilli() + (unReadMessage * 1000L);
+                .toEpochMilli() + (unReadMessage * weight);
         redisTemplate.opsForZSet().add(zSetKey, String.valueOf(teamId), score);
     }
 

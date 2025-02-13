@@ -11,7 +11,8 @@ public enum TeamSuccessCode implements SuccessCode {
 
     CREATE_TEAM(HttpStatus.OK, "TEAM2001", "채팅방 생성하기"),
     JOIN_TEAM(HttpStatus.OK, "TEAM2002", "채팅방 입장하기"),
-    LEAVE_TEAM(HttpStatus.OK, "TEAM2002", "채팅방 나가기");
+    LEAVE_TEAM(HttpStatus.OK, "TEAM2003", "채팅방 나가기"),
+    DELETE_TEAM(HttpStatus.OK, "TEAM2004", "채팅방 삭제하기");
 
     private final HttpStatus httpStatus;
     private final String code;
