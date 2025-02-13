@@ -5,6 +5,7 @@ import org.gdsccau.team5.safebridge.common.code.success.TeamSuccessCode;
 import org.gdsccau.team5.safebridge.common.response.ApiResponse;
 import org.gdsccau.team5.safebridge.domain.team.dto.request.TeamRequestDto.TeamCreateRequestDto;
 import org.gdsccau.team5.safebridge.domain.team.service.TeamService;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,12 +19,17 @@ public class TeamController {
 
     private final TeamService teamService;
 
-    @PostMapping("/{teamId}")
+    @PostMapping("/")
     public ApiResponse<Void> createTeam(
-            @PathVariable final Long teamId,
             @RequestBody final TeamCreateRequestDto requestDto) {
-        teamService.createTeam(teamId, requestDto);
+        teamService.createTeam(requestDto);
         return ApiResponse.onSuccess(TeamSuccessCode.CREATE_TEAM);
+    }
+
+    @DeleteMapping("/{teamId}")
+    public ApiResponse<Void> deleteTeam(@PathVariable final Long teamId) {
+        teamService.deleteTeam(teamId);
+        return ApiResponse.onSuccess(TeamSuccessCode.DELETE_TEAM);
     }
 
     @PostMapping("/{teamId}/join")

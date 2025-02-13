@@ -16,6 +16,8 @@ import lombok.experimental.SuperBuilder;
 import org.gdsccau.team5.safebridge.domain.BaseEntity;
 import org.gdsccau.team5.safebridge.domain.team.entity.Team;
 import org.gdsccau.team5.safebridge.domain.user.entity.User;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Getter
@@ -34,8 +36,10 @@ public class UserTeam extends BaseEntity {
     private boolean inRoom;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Team team;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private User user;
 }
