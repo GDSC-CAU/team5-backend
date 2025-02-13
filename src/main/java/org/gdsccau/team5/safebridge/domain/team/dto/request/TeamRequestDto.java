@@ -13,6 +13,7 @@ public class TeamRequestDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class TeamCreateRequestDto {
+        String name;
         List<Long> userIds;
     }
 }

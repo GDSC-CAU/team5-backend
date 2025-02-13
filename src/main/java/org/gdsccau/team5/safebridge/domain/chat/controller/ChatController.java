@@ -35,7 +35,7 @@ public class ChatController {
     public void chat(final ChatRequestDto.ChatMessageRequestDto chatRequestDto,
                      @DestinationVariable final Long teamId) {
 
-        // 1. Chat 엔티티 저장하기 (user, team 같이 저장해야)
+        // 1. Chat 엔티티 저장하기 (user, team 같이 저장해야), userId는 Body,
         Chat chat = chatService.createChat(chatRequestDto);
 
         // 2. 실시간 메시지 전송하기 (번역 처리 필요)
