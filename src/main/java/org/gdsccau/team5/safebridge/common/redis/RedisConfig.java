@@ -1,4 +1,4 @@
-package org.gdsccau.team5.safebridge.common.config;
+package org.gdsccau.team5.safebridge.common.redis;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

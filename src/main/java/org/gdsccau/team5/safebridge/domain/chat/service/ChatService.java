@@ -1,20 +1,22 @@
 package org.gdsccau.team5.safebridge.domain.chat.service;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.gdsccau.team5.safebridge.domain.chat.converter.ChatConverter;
-import org.gdsccau.team5.safebridge.domain.chat.dto.request.ChatRequestDto;
+import org.gdsccau.team5.safebridge.domain.chat.dto.request.ChatRequestDto.ChatMessageRequestDto;
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
 import org.gdsccau.team5.safebridge.domain.chat.repository.ChatRepository;
 import org.gdsccau.team5.safebridge.domain.team.dto.response.TeamResponseDto.TeamListDto;
+import org.gdsccau.team5.safebridge.domain.team.entity.Team;
 import org.gdsccau.team5.safebridge.domain.team.service.TeamCheckService;
+import org.gdsccau.team5.safebridge.domain.user.entity.User;
+import org.gdsccau.team5.safebridge.domain.user.service.UserCheckService;
 import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamCheckService;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,11 +26,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class ChatService {
 
     private final UserTeamCheckService userTeamCheckService;
+    private final UserCheckService userCheckService;
     private final TeamCheckService teamCheckService;
     private final ChatRepository chatRepository;
-    private final RedisTemplate<String, String> redisTemplate;
-
-    private static final Long weight = 1000L;
+    private final RedisManager redisManager;
 
     public Map<Long, TeamListDto> refreshRedisValue(final Chat chat, final Long teamId) {
         /*
@@ -41,53 +42,39 @@ public class ChatService {
         List<Long> userIds = userTeamCheckService.findAllUserIdByTeamId(teamId);
 
         for (Long userId : userIds) {
-            String inRoomKey = "userId:" + userId + "teamId:" + teamId + "inRoom";
-            if (getInRoom(inRoomKey) == 1) {
-                continue;
-            }
-            String unReadMessageKey = "userId:" + userId + "teamId:" + teamId + "unReadMessage";
-            int unReadMessage = updateUnReadMessage(unReadMessageKey);
-            String zSetKey = "userId:" + userId + "team";
-            updateZSet(zSetKey, teamId, chat, unReadMessage);
+            String inRoomKey = redisManager.getInRoomKey(userId, teamId);
+            String unReadMessageKey = redisManager.getUnReadMessageKey(userId, teamId);
+            String zSetKey = redisManager.getZSetKey(userId);
 
-            results.put(userId, createTeamListDto(teamId, chat.getText(), chat.getCreatedAt()));
+            int inRoom = redisManager.getInRoom(inRoomKey);
+            if (inRoom == 0) {
+                redisManager.updateUnReadMessage(unReadMessageKey);
+            }
+            redisManager.updateZSet(zSetKey, teamId, chat);
+            results.put(userId, createTeamListDto(teamId, chat.getText(), chat.getCreatedAt(),
+                    redisManager.getUnReadMessage(unReadMessageKey)));
         }
 
         return results;
     }
 
     @Transactional
-    public Chat createChat(final ChatRequestDto.ChatMessageRequestDto chatRequestDto) {
-        Chat chat = ChatConverter.toChat(chatRequestDto);
+    public Chat createChat(final ChatMessageRequestDto chatRequestDto, final Long teamId) {
+        User user = userCheckService.findByUserId(chatRequestDto.getUserId());
+        Team team = teamCheckService.findByTeamId(teamId);
+        Chat chat = ChatConverter.toChat(chatRequestDto, user, team);
         return chatRepository.save(chat);
     }
 
-    private int getInRoom(final String inRoomKey) {
-        String inRoomValue = redisTemplate.opsForValue().get(inRoomKey);
-        return inRoomValue != null ? Integer.parseInt(inRoomValue) : 0;
-    }
-
-    private int updateUnReadMessage(final String unReadMessageKey) {
-        redisTemplate.opsForValue().increment(unReadMessageKey, 1);
-        String unReadMessageValue = redisTemplate.opsForValue().get(unReadMessageKey);
-        return unReadMessageValue != null ? Integer.parseInt(unReadMessageValue) : 0;
-    }
-
-    private void updateZSet(final String zSetKey, final Long teamId, final Chat chat, final int unReadMessage) {
-        long score = chat.getCreatedAt()
-                .atZone(ZoneId.of("Asia/Seoul"))
-                .toInstant()
-                .toEpochMilli() + (unReadMessage * weight);
-        redisTemplate.opsForZSet().add(zSetKey, String.valueOf(teamId), score);
-    }
-
     private TeamListDto createTeamListDto(final Long teamId, final String lastChat,
-                                          final LocalDateTime lastChatTime) {
+                                          final LocalDateTime lastChatTime, final int unReadMessage) {
         return TeamListDto.builder()
                 .teamId(teamId)
                 .teamName(teamCheckService.findNameByTeamId(teamId))
                 .lastChat(lastChat)
                 .lastChatTime(lastChatTime)
+                .unReadMessage(unReadMessage)
+                .numberOfUsers(userTeamCheckService.countNumOfUsersByTeamId(teamId))
                 .build();
     }
 }

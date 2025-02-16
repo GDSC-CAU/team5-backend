@@ -42,4 +42,8 @@ public class UserTeam extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private User user;
+
+    public void updateAccessDate() {
+        this.accessDate = LocalDateTime.now();
+    }
 }
