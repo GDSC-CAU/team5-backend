@@ -24,9 +24,14 @@ public class ChatResponseDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ChatMessageWithIsReadResponseDto {
+        Long chatId;
         String name;
         String message;
         boolean isRead;
         LocalDateTime sendTime;
+
+        public void setRead(boolean isRead) {
+            this.isRead = isRead;
+        }
     }
 }

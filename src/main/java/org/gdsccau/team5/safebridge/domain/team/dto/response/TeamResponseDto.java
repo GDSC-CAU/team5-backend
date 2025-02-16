@@ -17,5 +17,16 @@ public class TeamResponseDto {
         String teamName;
         String lastChat;
         LocalDateTime lastChatTime;
+        int unReadMessage;
+        int numberOfUsers;
+    }
+
+    @Builder
+    @Getter
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class TeamDataDto{
+        String teamName;
+        int numberOfUsers;
     }
 }

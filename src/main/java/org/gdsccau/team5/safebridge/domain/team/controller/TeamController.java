@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.gdsccau.team5.safebridge.common.code.success.TeamSuccessCode;
 import org.gdsccau.team5.safebridge.common.response.ApiResponse;
 import org.gdsccau.team5.safebridge.domain.team.dto.request.TeamRequestDto.TeamCreateRequestDto;
+import org.gdsccau.team5.safebridge.domain.team.dto.response.TeamResponseDto.TeamDataDto;
 import org.gdsccau.team5.safebridge.domain.team.service.TeamService;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,9 +20,8 @@ public class TeamController {
 
     private final TeamService teamService;
 
-    @PostMapping("/")
-    public ApiResponse<Void> createTeam(
-            @RequestBody final TeamCreateRequestDto requestDto) {
+    @PostMapping("")
+    public ApiResponse<Void> createTeam(@RequestBody final TeamCreateRequestDto requestDto) {
         teamService.createTeam(requestDto);
         return ApiResponse.onSuccess(TeamSuccessCode.CREATE_TEAM);
     }
@@ -32,15 +32,17 @@ public class TeamController {
         return ApiResponse.onSuccess(TeamSuccessCode.DELETE_TEAM);
     }
 
-    @PostMapping("/{teamId}/join")
-    public ApiResponse<Void> joinTeam(@PathVariable final Long teamId) {
-        teamService.joinTeam(teamId);
-        return ApiResponse.onSuccess(TeamSuccessCode.JOIN_TEAM);
+    @PostMapping("/{teamId}/join/{userId}")
+    public ApiResponse<TeamDataDto> joinTeam(@PathVariable(name = "teamId") final Long teamId,
+                                             @PathVariable(name = "userId") final Long userId) {
+        TeamDataDto teamDataDto = teamService.joinTeam(teamId, userId);
+        return ApiResponse.onSuccess(TeamSuccessCode.JOIN_TEAM, teamDataDto);
     }
 
-    @PostMapping("/{teamId}/leave")
-    public ApiResponse<Void> leaveTeam(@PathVariable final Long teamId) {
-        teamService.leaveTeam(teamId);
+    @PostMapping("/{teamId}/leave/{userId}")
+    public ApiResponse<Void> leaveTeam(@PathVariable(name = "teamId") final Long teamId,
+                                       @PathVariable(name = "userId") final Long userId) {
+        teamService.leaveTeam(teamId, userId);
         return ApiResponse.onSuccess(TeamSuccessCode.LEAVE_TEAM);
     }
 }

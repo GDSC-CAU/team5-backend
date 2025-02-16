@@ -13,7 +13,6 @@ public class ChatDto {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class ChatMetaDataDto {
-        String teamName;
         String lastChat;
         LocalDateTime lastChatTime;
     }
