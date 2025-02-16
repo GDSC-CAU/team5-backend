@@ -15,7 +15,16 @@ public class ChatRequestDto {
     public static class ChatMessageRequestDto {
         //    String token;
         //    boolean isTodo;
+        Long userId;
         String name;
         String message;
+    }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class LastChatIdRequestDto {
+        Long lastChatId;
     }
 }

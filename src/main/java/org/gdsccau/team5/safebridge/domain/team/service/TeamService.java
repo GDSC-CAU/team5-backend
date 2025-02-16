@@ -1,18 +1,17 @@
 package org.gdsccau.team5.safebridge.domain.team.service;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.gdsccau.team5.safebridge.domain.team.dto.request.TeamRequestDto.TeamCreateRequestDto;
+import org.gdsccau.team5.safebridge.domain.team.dto.response.TeamResponseDto.TeamDataDto;
 import org.gdsccau.team5.safebridge.domain.team.entity.Team;
 import org.gdsccau.team5.safebridge.domain.team.repository.TeamRepository;
 import org.gdsccau.team5.safebridge.domain.user.entity.User;
 import org.gdsccau.team5.safebridge.domain.user.service.UserCheckService;
 import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamCheckService;
 import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamService;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +25,7 @@ public class TeamService {
     private final UserCheckService userCheckService;
     private final TeamCheckService teamCheckService;
     private final TeamRepository teamRepository;
-    private final RedisTemplate<String, String> redisTemplate;
+    private final RedisManager redisManager;
 
     @Transactional
     public void createTeam(final TeamCreateRequestDto requestDto) {
@@ -36,94 +35,52 @@ public class TeamService {
         Team team = this.createTeam(requestDto.getName());
         users.forEach(
                 user -> {
+                    redisManager.initRedis(user.getId(), team.getId());
                     userTeamService.createUserTeam(user, team);
-                    this.initRedis(user, team);
                 }
         );
+        log.info("채팅방 {} 생성하기", team.getName());
     }
 
     @Transactional
     public void deleteTeam(final Long teamId) {
-        Team team = teamCheckService.findByTeamId(teamId);
-        userTeamCheckService.findAllUserIdByTeamId(teamId).stream()
-                .map(userCheckService::findByUserId)
-                .forEach(user -> this.updateRedisWhenDelete(user, team));
+        userTeamCheckService.findAllUserIdByTeamId(teamId)
+                .forEach(userId -> redisManager.updateRedisWhenDelete(userId, teamId));
         teamRepository.deleteById(teamId);
+        log.info("채팅방 {} 삭제하기", teamId);
     }
 
     @Transactional
-    public void joinTeam(final Long teamId) {
-        Long userId = 1L;
-        User user = userCheckService.findByUserId(userId);
-        Team team = teamCheckService.findByTeamId(teamId);
-        this.updateRedisWhenJoin(user, team);
+    public TeamDataDto joinTeam(final Long teamId, final Long userId) {
+        String teamName = teamCheckService.findNameByTeamId(teamId);
+        int numberOfUsers = userTeamCheckService.countNumOfUsersByTeamId(teamId);
+        redisManager.updateRedisWhenJoin(userId, teamId);
 
+        log.info("{}가 채팅방 {} 접속하기", userId, teamId);
+        // 4. DB 동기화
+
+        return this.createTeamDataDto(teamName, numberOfUsers);
+    }
+
+    @Transactional
+    public void leaveTeam(final Long teamId, final Long userId) {
+        userTeamService.updateAccessDate(userId, teamId);
+        redisManager.updateRedisWhenLeave(userId, teamId);
+        log.info("{}가 채팅방 {} 나가기", userId, teamId);
         // 4. DB 동기화
     }
 
-    @Transactional
-    public void leaveTeam(final Long teamId) {
-        Long userId = 1L;
-        User user = userCheckService.findByUserId(userId);
-        Team team = teamCheckService.findByTeamId(teamId);
-        this.updateRedisWhenLeave(user, team);
-
-        // 4. DB 동기화
-    }
-
-    @Transactional
-    public Team createTeam(final String name) {
+    private Team createTeam(final String name) {
         Team team = Team.builder()
                 .name(name)
                 .build();
         return teamRepository.save(team);
     }
 
-    private void initRedis(final User user, final Team team) {
-        String inRoomKey = this.getInRoomKey(user, team);
-        String unReadMessageKey = this.getUnReadMessageKey(user, team);
-        String zSetKey = this.getZSetKey(user);
-        long score = LocalDateTime.now()
-                .atZone(ZoneId.of("Asia/Seoul"))
-                .toInstant()
-                .toEpochMilli();
-        redisTemplate.opsForValue().set(inRoomKey, "0");
-        redisTemplate.opsForValue().set(unReadMessageKey, "0");
-        redisTemplate.opsForZSet().add(zSetKey, String.valueOf(team.getId()), score);
-    }
-
-    private void updateRedisWhenJoin(final User user, final Team team) {
-        String inRoomKey = this.getInRoomKey(user, team);
-        String unReadMessageKey = this.getUnReadMessageKey(user, team);
-        redisTemplate.opsForValue().set(inRoomKey, "1");
-        redisTemplate.opsForValue().set(unReadMessageKey, "0");
-    }
-
-    private void updateRedisWhenLeave(final User user, final Team team) {
-        String inRoomKey = this.getInRoomKey(user, team);
-        String unReadMessageKey = this.getUnReadMessageKey(user, team);
-        redisTemplate.opsForValue().set(inRoomKey, "0");
-        redisTemplate.opsForValue().set(unReadMessageKey, "0");
-    }
-
-    private void updateRedisWhenDelete(final User user, final Team team) {
-        String inRoomKey = this.getInRoomKey(user, team);
-        String unReadMessageKey = this.getUnReadMessageKey(user, team);
-        String zSetKey = this.getZSetKey(user);
-        redisTemplate.delete(inRoomKey);
-        redisTemplate.delete(unReadMessageKey);
-        redisTemplate.delete(zSetKey);
-    }
-
-    private String getInRoomKey(final User user, final Team team) {
-        return "userId:" + user.getId() + "teamId:" + team.getId() + "inRoom";
-    }
-
-    private String getUnReadMessageKey(final User user, final Team team) {
-        return "userId:" + user.getId() + "teamId:" + team.getId() + "unReadMessage";
-    }
-
-    private String getZSetKey(final User user) {
-        return "userId:" + user.getId() + "team";
+    private TeamDataDto createTeamDataDto(final String teamName, final int numberOfUsers) {
+        return TeamDataDto.builder()
+                .teamName(teamName)
+                .numberOfUsers(numberOfUsers)
+                .build();
     }
 }
