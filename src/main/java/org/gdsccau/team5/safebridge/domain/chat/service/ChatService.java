@@ -32,12 +32,6 @@ public class ChatService {
     private final RedisManager redisManager;
 
     public Map<Long, TeamListDto> refreshRedisValue(final Chat chat, final Long teamId) {
-        /*
-         1. UserId + TeamId로 Key를 만들고 inRoom 값을 확인해 채팅방에 있는지 없는지 검사한다.
-         2. inRoom = 1이면 채팅방 화면에 있는 것이니 메시지 값을 증가시키지 않는다.
-         3. inRoom = 0이면 채팅방에서 나간 상태니까 메시지 값을 +1 증가시킨다.
-         4. 수정된 unReadMessage 값을 기반으로 ZSet을 재정렬한다.
-        */
         Map<Long, TeamListDto> results = new HashMap<>();
         List<Long> userIds = userTeamCheckService.findAllUserIdByTeamId(teamId);
 
@@ -51,8 +45,9 @@ public class ChatService {
                 redisManager.updateUnReadMessage(unReadMessageKey);
             }
             redisManager.updateZSet(zSetKey, teamId, chat);
-            results.put(userId, createTeamListDto(teamId, chat.getText(), chat.getCreatedAt(),
-                    redisManager.getUnReadMessage(unReadMessageKey)));
+            results.put(userId, createTeamListDto(
+                    teamId, chat.getText(), chat.getCreatedAt(), redisManager.getUnReadMessage(unReadMessageKey)
+            ));
         }
 
         return results;

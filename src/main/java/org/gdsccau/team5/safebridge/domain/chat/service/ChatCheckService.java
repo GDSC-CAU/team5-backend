@@ -27,7 +27,6 @@ public class ChatCheckService {
     private final ChatRepository chatRepository;
     private final ChatCustomRepository chatCustomRepository;
     private final UserTeamRepository userTeamRepository;
-    private final RedisManager redisManager;
 
     @Transactional(readOnly = true)
     public Chat findChatById(final Long chatId) {
