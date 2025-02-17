@@ -19,32 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UserTeamCheckService {
 
-    private final TeamCheckService teamCheckService;
-    private final ChatCheckService chatCheckService;
     private final UserTeamRepository userTeamRepository;
-    private final RedisManager redisManager;
-
-    public List<TeamListDto> findAllTeamDataByUserId(final Long userId) {
-        String zSetKey = redisManager.getZSetKey(userId);
-        return Objects.requireNonNull(redisManager.getZSet(zSetKey)).stream()
-                .map(Long::parseLong)
-                .map(teamId -> {
-                    String unReadMessageKey = redisManager.getUnReadMessageKey(userId, teamId);
-                    int unReadMessage = redisManager.getUnReadMessage(unReadMessageKey);
-                    String teamName = teamCheckService.findNameByTeamId(teamId);
-                    int numberOfUsers = this.countNumOfUsersByTeamId(teamId);
-                    ChatMetaDataDto chatMetaDataDto = chatCheckService.findChatMetaDataByTeamId(teamId);
-                    return TeamListDto.builder()
-                            .teamId(teamId)
-                            .teamName(teamName)
-                            .lastChat(chatMetaDataDto.getLastChat())
-                            .lastChatTime(chatMetaDataDto.getLastChatTime())
-                            .unReadMessage(unReadMessage)
-                            .numberOfUsers(numberOfUsers)
-                            .build();
-                })
-                .toList();
-    }
 
     @Transactional(readOnly = true)
     public List<Long> findAllUserIdByTeamId(final Long teamId) {
