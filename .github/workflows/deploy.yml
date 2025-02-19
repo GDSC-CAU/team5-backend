@@ -53,10 +53,11 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            echo "Deploying container: $CONTAINER_NAME with tag: $TAG"
             docker stop $CONTAINER_NAME || true
             docker rm $CONTAINER_NAME || true
 
-            docker pull bingle625/gdg-cau-team5-backend:$TAG
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/gdg-cau-team5-backend:$TAG
 
             if [[ "$TAG" == "latest" ]]; then
               docker run -d --name safe-bridge-backend -p 8080:8080 bingle625/gdg-cau-team5-backend:latest
