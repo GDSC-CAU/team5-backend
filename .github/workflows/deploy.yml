@@ -43,6 +43,8 @@ jobs:
           fi
 
       - name: Build & Push Docker Image
+        env:
+          TAG: ${{ steps.set-tag.outputs.tag }}
         run: |
           docker buildx build --platform linux/amd64 -t bingle625/gdg-cau-team5-backend:$TAG --push .
 
