@@ -35,11 +35,11 @@ jobs:
         id: set-tag
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "TAG=latest" >> $GITHUB_ENV
-            echo "CONTAINER_NAME=safe-bridge-backend" >> $GITHUB_ENV
+            echo "TAG=latest" >> $GITHUB_OUTPUT
+            echo "CONTAINER_NAME=safe-bridge-backend" >> $GITHUB_OUTPUT
           else
-            echo "TAG=dev" >> $GITHUB_ENV
-            echo "CONTAINER_NAME=safe-bridge-test" >> $GITHUB_ENV
+            echo "TAG=dev" >> $GITHUB_OUTPUT
+            echo "CONTAINER_NAME=safe-bridge-test" >> $GITHUB_OUTPUT
           fi
 
       - name: Build & Push Docker Image
@@ -49,8 +49,8 @@ jobs:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v0.1.7
         env:
-          TAG: ${{ env.TAG }}
-          CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
+          TAG: ${{ steps.set-tag.outputs.tag }}
+          CONTAINER_NAME: ${{ steps.set-tag.outputs.container_name }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
