@@ -50,21 +50,18 @@ jobs:
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v0.1.7
-        env:
-          TAG: ${{ steps.set-tag.outputs.tag }}
-          CONTAINER_NAME: ${{ steps.set-tag.outputs.container_name }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            echo "Deploying container: $CONTAINER_NAME with tag: $TAG"
-            docker stop $CONTAINER_NAME || true
-            docker rm $CONTAINER_NAME || true
-
-            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/gdg-cau-team5-backend:$TAG
-
-            if [[ "$TAG" == "latest" ]]; then
+            echo "Deploying container: ${{ steps.set-tag.outputs.container_name }} with tag: ${{ steps.set-tag.outputs.tag }}"
+            docker stop ${{ steps.set-tag.outputs.container_name }} || true
+            docker rm ${{ steps.set-tag.outputs.container_name }} || true
+            
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/gdg-cau-team5-backend:${{ steps.set-tag.outputs.tag }}
+            
+            if [[ "${{ steps.set-tag.outputs.tag }}" == "latest" ]]; then
               docker run -d --name safe-bridge-backend -p 8080:8080 bingle625/gdg-cau-team5-backend:latest
             else
               docker run -d --name safe-bridge-test -p 8081:8080 bingle625/gdg-cau-team5-backend:dev
