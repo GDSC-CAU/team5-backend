@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TestService {
 
     public TestDto apiSuccessTest() {
-        return new TestDto("API 테스트");
+        return new TestDto("API 테스트 성공");
     }
 
     public void apiFailTest() {
