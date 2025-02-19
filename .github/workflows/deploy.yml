@@ -48,6 +48,9 @@ jobs:
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v0.1.7
+        env:
+          TAG: ${{ env.TAG }}
+          CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
@@ -62,5 +65,5 @@ jobs:
             if [[ "$TAG" == "latest" ]]; then
               docker run -d --name safe-bridge-backend -p 8080:8080 bingle625/gdg-cau-team5-backend:latest
             else
-              docker run -d --name safe-bridge-test -p 8081:8080 bingle625/gdg-cau-team5-backend:develop
+              docker run -d --name safe-bridge-test -p 8081:8080 bingle625/gdg-cau-team5-backend:dev
             fi
