@@ -16,4 +16,14 @@ public class ChatDto {
         String lastChat;
         LocalDateTime lastChatTime;
     }
+
+    @Builder
+    @Getter
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class TermDataDto {
+        int startIndex;
+        int endIndex;
+        String term;
+    }
 }

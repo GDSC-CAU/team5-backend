@@ -28,17 +28,10 @@ public class RedisConfig {
         RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(redisConnectionFactory());
 
-        // 일반적인 key:value의 경우 시리얼라이저
         redisTemplate.setKeySerializer(new StringRedisSerializer());
-        // Value를 JSON 형식으로 직렬화
         redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer());
-        // 꺼낼 때 객체로 Casting하려면 ..
-
-        // Hash를 사용할 경우 시리얼라이저
         redisTemplate.setHashKeySerializer(new StringRedisSerializer());
         redisTemplate.setHashValueSerializer(new StringRedisSerializer());
-
-        // 모든 경우
         redisTemplate.setDefaultSerializer(new StringRedisSerializer());
 
         return redisTemplate;
