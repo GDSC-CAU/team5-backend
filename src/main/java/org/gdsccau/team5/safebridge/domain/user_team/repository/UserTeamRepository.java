@@ -14,7 +14,7 @@ public interface UserTeamRepository extends JpaRepository<UserTeam, Long> {
     List<Long> findAllUserIdByTeamId(final Long teamId);
 
     @Query("SELECT count(*) FROM UserTeam ut WHERE ut.team.id = :teamId")
-    int countNumOfUsersByTeamId(final Long teamId);
+    Integer countNumOfUsersByTeamId(final Long teamId);
 
     @Query("SELECT ut.team.id FROM UserTeam ut WHERE ut.user.id = :userId")
     List<Long> findAllTeamIdByUserId(final Long userId);
