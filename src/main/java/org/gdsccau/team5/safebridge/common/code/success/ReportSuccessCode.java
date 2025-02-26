@@ -9,7 +9,8 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public enum ReportSuccessCode implements SuccessCode {
 
-    REPORT_SUCCESS_CODE(HttpStatus.OK, "REPORT2001", "신고하기 성공");
+    REPORT_SUCCESS_CODE(HttpStatus.OK, "REPORT2001", "신고하기 성공"),
+    REPORT_LIST_SUCCESS_CODE(HttpStatus.OK, "REPORT2002", "신고하기 리스트 성공");
 
     private final HttpStatus httpStatus;
     private final String code;

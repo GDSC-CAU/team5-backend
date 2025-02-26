@@ -1,6 +1,7 @@
 package org.gdsccau.team5.safebridge.domain.report.service;
 
 import java.io.IOException;
+import java.util.List;
 import org.gdsccau.team5.safebridge.common.code.error.ChatErrorCode;
 import org.gdsccau.team5.safebridge.common.code.error.ReportErrorCode;
 import org.gdsccau.team5.safebridge.common.exception.handler.ExceptionHandler;
@@ -47,5 +48,9 @@ public class ReportService {
       throw new ExceptionHandler(ReportErrorCode.REPORT_FILE_NOT_CORRECT);
     }
 
+  }
+
+  public List<Report> list(Long leaderId) {
+    return reportRepository.findAllByLeaderId(leaderId);
   }
 }
