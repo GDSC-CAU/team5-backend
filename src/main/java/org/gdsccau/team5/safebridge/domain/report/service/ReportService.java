@@ -33,7 +33,7 @@ public class ReportService {
     this.userCheckService = userCheckService;
   }
 
-  public String store(final ReportRequestDto requestDto) {
+  public Report store(final ReportRequestDto requestDto) {
 
     try {
       String text = sttWebClient.requestStt(requestDto.file());
@@ -41,7 +41,7 @@ public class ReportService {
       User leader = userCheckService.findByUserId(requestDto.leaderId());
       Report report = ReportConverter.toReport(text, user, leader);
       reportRepository.save(report);
-      return text;
+      return report;
 
     } catch (IOException ioException) {
       throw new ExceptionHandler(ReportErrorCode.REPORT_FILE_NOT_CORRECT);
