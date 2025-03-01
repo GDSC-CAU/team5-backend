@@ -14,10 +14,11 @@ import org.gdsccau.team5.safebridge.domain.user.entity.User;
 public class ChatConverter {
 
     public static ChatResponseDto.ChatMessageResponseDto toChatResponseDto(
-            final String name, final Chat chat, final List<TermDataDto> terms) {
+            final String name, final Chat chat, final List<TermDataDto> terms, final String translatedMessage) {
         return ChatResponseDto.ChatMessageResponseDto.builder()
                 .name(name)
                 .message(chat.getText())
+                .translatedMessage(translatedMessage)
                 .sendTime(chat.getCreatedAt())
                 .terms(terms)
                 .build();

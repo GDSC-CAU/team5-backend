@@ -5,10 +5,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.redis.RedisManager;
-import org.gdsccau.team5.safebridge.common.term.TermExtractor;
+import org.gdsccau.team5.safebridge.common.term.TermManager;
 import org.gdsccau.team5.safebridge.domain.chat.converter.ChatConverter;
-import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataDto;
+import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataWithNewChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.request.ChatRequestDto.ChatMessageRequestDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.response.ChatResponseDto.ChatMessageWithIsReadResponseDto;
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
@@ -25,6 +26,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class ChatFacade {
@@ -40,12 +42,13 @@ public class ChatFacade {
 
     private final SimpMessagingTemplate messagingTemplate;
     private final RedisManager redisManager;
-    private final TermExtractor termExtractor;
+    private final TermManager termManager;
 
     public void chat(final ChatMessageRequestDto chatRequestDto, final Long teamId, final Chat chat) {
-        List<TermDataDto> terms = termExtractor.query(chatRequestDto.getMessage());
+        TermDataWithNewChatDto result = termManager.query(chatRequestDto.getMessage());
+        String translatedText = termManager.translate(result.getNewChat());
         messagingTemplate.convertAndSend(CHAT_SUB_URL + teamId,
-                ChatConverter.toChatResponseDto(chatRequestDto.getName(), chat, terms));
+                ChatConverter.toChatResponseDto(chatRequestDto.getName(), chat, result.getTerms(), translatedText));
         Map<Long, TeamListDto> map = this.refreshRedisValue(chat, teamId);
         for (Long userId : map.keySet()) {
             messagingTemplate.convertAndSend(TEAMS_SUB_URL + userId, map.get(userId));

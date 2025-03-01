@@ -38,4 +38,4 @@ out/
 .vscode/
 
 **/application-database.yml
-
+**/google-credentials.json

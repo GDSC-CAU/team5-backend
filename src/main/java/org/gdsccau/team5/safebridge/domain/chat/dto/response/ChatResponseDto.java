@@ -17,6 +17,7 @@ public class ChatResponseDto {
     public static class ChatMessageResponseDto {
         String name;
         String message;
+        String translatedMessage;
         LocalDateTime sendTime;
         List<TermDataDto> terms;
     }
