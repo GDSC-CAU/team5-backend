@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.redis.RedisManager;
@@ -33,6 +34,7 @@ public class ChatFacade {
 
     private static final String CHAT_SUB_URL = "/sub/chats/";
     private static final String TEAMS_SUB_URL = "/sub/teams/";
+    private static final String TRANSLATE_SUB_URL = "/sub/translate/";
 
     private final ChatService chatService;
     private final ChatCheckService chatCheckService;
@@ -46,12 +48,21 @@ public class ChatFacade {
 
     public void chat(final ChatMessageRequestDto chatRequestDto, final Long teamId, final Chat chat) {
         TermDataWithNewChatDto result = termManager.query(chatRequestDto.getMessage());
-        String translatedText = termManager.translate(result.getNewChat());
         messagingTemplate.convertAndSend(CHAT_SUB_URL + teamId,
-                ChatConverter.toChatResponseDto(chatRequestDto.getName(), chat, result.getTerms(), translatedText));
-        Map<Long, TeamListDto> map = this.refreshRedisValue(chat, teamId);
-        for (Long userId : map.keySet()) {
-            messagingTemplate.convertAndSend(TEAMS_SUB_URL + userId, map.get(userId));
+                ChatConverter.toChatResponseDto(chatRequestDto.getName(), chat, result.getTerms()));
+
+        List<Long> userIds = userTeamCheckService.findAllUserIdByTeamId(teamId);
+        for (Long userId : userIds) {
+            CompletableFuture<String> translatedText = termManager.translate(
+                    result.getNewChat(), result.getTerms(), userId);
+            translatedText.thenAccept(text -> {
+                System.out.println(text);
+                messagingTemplate.convertAndSend(TRANSLATE_SUB_URL + teamId + "/" + userId,
+                        ChatConverter.toTranslatedTextResponseDto(text, chat.getId()));
+            });
+            // TODO 비동기 예외처리 함수, 현장 용어에 대한 번역 처리는 어떻게?
+            TeamListDto teamListDto = this.refreshRedisValue(chat, teamId, userId);
+            messagingTemplate.convertAndSend(TEAMS_SUB_URL + userId, teamListDto);
         }
     }
 
@@ -74,26 +85,19 @@ public class ChatFacade {
         return response;
     }
 
-    private Map<Long, TeamListDto> refreshRedisValue(final Chat chat, final Long teamId) {
-        Map<Long, TeamListDto> results = new HashMap<>();
-        List<Long> userIds = userTeamCheckService.findAllUserIdByTeamId(teamId);
+    private TeamListDto refreshRedisValue(final Chat chat, final Long teamId, final Long userId) {
+        String inRoomKey = redisManager.getInRoomKey(userId, teamId);
+        String unReadMessageKey = redisManager.getUnReadMessageKey(userId, teamId);
+        String zSetKey = redisManager.getZSetKey(userId);
 
-        for (Long userId : userIds) {
-            String inRoomKey = redisManager.getInRoomKey(userId, teamId);
-            String unReadMessageKey = redisManager.getUnReadMessageKey(userId, teamId);
-            String zSetKey = redisManager.getZSetKey(userId);
-
-            int inRoom = redisManager.getInRoom(inRoomKey);
-            if (inRoom == 0) {
-                redisManager.updateUnReadMessage(unReadMessageKey);
-            }
-            redisManager.updateZSet(zSetKey, teamId, chat);
-            results.put(userId, createTeamListDto(
-                    teamId, chat.getText(), chat.getCreatedAt(), redisManager.getUnReadMessage(unReadMessageKey)
-            ));
+        int inRoom = redisManager.getInRoom(inRoomKey);
+        if (inRoom == 0) {
+            redisManager.updateUnReadMessage(unReadMessageKey);
         }
-
-        return results;
+        redisManager.updateZSet(zSetKey, teamId, chat);
+        return createTeamListDto(
+                teamId, chat.getText(), chat.getCreatedAt(), redisManager.getUnReadMessage(unReadMessageKey)
+        );
     }
 
     private TeamListDto createTeamListDto(final Long teamId, final String lastChat,

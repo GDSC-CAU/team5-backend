@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.ahocorasick.trie.Emit;
@@ -21,6 +22,7 @@ import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataWithNewChatDto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -68,22 +70,25 @@ public class TermManager {
                 .build();
     }
 
-    public String translate(final String text) {
-        try (InputStream inputStream = new ClassPathResource(credentialPath).getInputStream()) {
-            GoogleCredentials credentials = ServiceAccountCredentials.fromStream(inputStream);
-            Translate translate = TranslateOptions.newBuilder()
-                    .setCredentials(credentials)
-                    .build()
-                    .getService();
-            // TODO 현재 User의 사용 언어를 받아와서 targetLanguage에 넣어야 한다!
-            Translation translation = translate.translate(text,
-                    Translate.TranslateOption.sourceLanguage(SOURCE_LANGUAGE_CODE),
-                    Translate.TranslateOption.targetLanguage("en"));
-            return translation.getTranslatedText().replaceAll("&#39;", "'");
-        } catch (IOException e) {
-            log.error("Google Translate API 호출 중 오류 발생", e);
-            return "";
-        }
+    @Async("threadPoolTaskExecutor")
+    public CompletableFuture<String> translate(final String text, final List<TermDataDto> terms, final Long userId) {
+        return CompletableFuture.supplyAsync(() -> {
+            try (InputStream inputStream = new ClassPathResource(credentialPath).getInputStream()) {
+                GoogleCredentials credentials = ServiceAccountCredentials.fromStream(inputStream);
+                Translate translate = TranslateOptions.newBuilder()
+                        .setCredentials(credentials)
+                        .build()
+                        .getService();
+                // TODO 현재 User의 사용 언어를 받아와서 targetLanguage에 넣어야 한다!
+                Translation translation = translate.translate(text,
+                        Translate.TranslateOption.sourceLanguage(SOURCE_LANGUAGE_CODE),
+                        Translate.TranslateOption.targetLanguage("en"));
+                return translation.getTranslatedText().replaceAll("&#39;", "'");
+            } catch (IOException e) {
+                log.error("Google Translate API 호출 중 오류 발생", e);
+                return "";
+            }
+        });
     }
 
     private void removeDuplicatedWord(final Set<String> terms, Set<String> finalTerms) {

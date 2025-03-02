@@ -17,7 +17,6 @@ public class ChatResponseDto {
     public static class ChatMessageResponseDto {
         String name;
         String message;
-        String translatedMessage;
         LocalDateTime sendTime;
         List<TermDataDto> terms;
     }
@@ -36,5 +35,14 @@ public class ChatResponseDto {
         public void setRead(boolean isRead) {
             this.isRead = isRead;
         }
+    }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TranslatedTextResponseDto {
+        Long chatId;
+        String translatedText;
     }
 }
