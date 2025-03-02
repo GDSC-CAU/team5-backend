@@ -51,22 +51,13 @@ public class ChatFacade {
 
     public void chat(final ChatMessageRequestDto chatRequestDto, final Long teamId, final Chat chat) {
         TermDataWithNewChatDto result = termManager.query(chatRequestDto.getMessage());
-        messagingTemplate.convertAndSend(CHAT_SUB_URL + teamId,
-                ChatConverter.toChatResponseDto(chatRequestDto.getName(), chat, result.getTerms()));
-
+        this.sendChatMessage(result, chatRequestDto.getName(), chat, teamId);
         List<Long> userIds = userTeamCheckService.findAllUserIdByTeamId(teamId);
         for (Long userId : userIds) {
             Language language = userCheckService.findLanguageByUserId(userId);
-            CompletableFuture<String> translatedText = termManager.translate(
-                    result.getNewChat(), result.getTerms(), language);
-            translatedText.thenAccept(text -> {
-                translationService.createTranslation(text, language, chat.getId());
-                messagingTemplate.convertAndSend(TRANSLATE_SUB_URL + teamId + "/" + userId,
-                        ChatConverter.toTranslatedTextResponseDto(text, chat.getId()));
-            });
-            // TODO 비동기 예외처리 함수, 현장 용어에 대한 번역 처리는 어떻게?
-            TeamListDto teamListDto = this.refreshRedisValue(chat, teamId, userId);
-            messagingTemplate.convertAndSend(TEAMS_SUB_URL + userId, teamListDto);
+            this.sendTranslatedMessage(result, language, chat, teamId, userId);
+            // TODO 현장 용어에 대한 번역 처리
+            this.sendTeamData(chat, teamId, userId);
         }
     }
 
@@ -89,6 +80,29 @@ public class ChatFacade {
         response.put("messages", chatSlice.getContent());
         response.put("hasNext", chatSlice.hasNext());
         return response;
+    }
+
+    private void sendChatMessage(final TermDataWithNewChatDto result, final String name, final Chat chat,
+                                 final Long teamId) {
+        messagingTemplate.convertAndSend(CHAT_SUB_URL + teamId,
+                ChatConverter.toChatResponseDto(name, chat, result.getTerms()));
+    }
+
+    private void sendTranslatedMessage(final TermDataWithNewChatDto result, final Language language, final Chat chat,
+                                       final Long teamId, final Long userId) {
+        CompletableFuture<String> translatedText = termManager.translate(
+                result.getNewChat(), result.getTerms(), language);
+        translatedText.thenAccept(text -> {
+            translationService.createTranslation(text, language, chat.getId());
+            messagingTemplate.convertAndSend(TRANSLATE_SUB_URL + teamId + "/" + userId,
+                    ChatConverter.toTranslatedTextResponseDto(text, chat.getId()));
+        });
+        // TODO 예외처리
+    }
+
+    private void sendTeamData(final Chat chat, final Long teamId, final Long userId) {
+        TeamListDto teamListDto = this.refreshRedisValue(chat, teamId, userId);
+        messagingTemplate.convertAndSend(TEAMS_SUB_URL + userId, teamListDto);
     }
 
     private TeamListDto refreshRedisValue(final Chat chat, final Long teamId, final Long userId) {
