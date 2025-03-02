@@ -7,7 +7,6 @@ import org.gdsccau.team5.safebridge.domain.user.dto.UserRequestDto;
 import org.gdsccau.team5.safebridge.domain.user.dto.UserResponseDto;
 import org.gdsccau.team5.safebridge.domain.user.entity.User;
 import org.gdsccau.team5.safebridge.domain.user.repository.UserRepository;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,6 +30,7 @@ public class UserController {
     public ApiResponse<Void> signup(@RequestBody final UserRequestDto userRequestDto) {
         User user = User.builder()
                 .name(userRequestDto.getName())
+                .language(userRequestDto.getLanguage())
                 .build();
         userRepository.save(user);
         return ApiResponse.onSuccess(CommonSuccessCode.OK);

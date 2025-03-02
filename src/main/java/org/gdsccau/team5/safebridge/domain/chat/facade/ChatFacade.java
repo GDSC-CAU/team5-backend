@@ -8,6 +8,7 @@ import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.redis.RedisManager;
+import org.gdsccau.team5.safebridge.common.term.Language;
 import org.gdsccau.team5.safebridge.common.term.TermManager;
 import org.gdsccau.team5.safebridge.domain.chat.converter.ChatConverter;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataWithNewChatDto;
@@ -19,6 +20,7 @@ import org.gdsccau.team5.safebridge.domain.chat.service.ChatService;
 import org.gdsccau.team5.safebridge.domain.team.dto.response.TeamResponseDto.TeamListDto;
 import org.gdsccau.team5.safebridge.domain.team.entity.Team;
 import org.gdsccau.team5.safebridge.domain.team.service.TeamCheckService;
+import org.gdsccau.team5.safebridge.domain.translation.service.TranslationService;
 import org.gdsccau.team5.safebridge.domain.user.entity.User;
 import org.gdsccau.team5.safebridge.domain.user.service.UserCheckService;
 import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamCheckService;
@@ -41,6 +43,7 @@ public class ChatFacade {
     private final TeamCheckService teamCheckService;
     private final UserCheckService userCheckService;
     private final UserTeamCheckService userTeamCheckService;
+    private final TranslationService translationService;
 
     private final SimpMessagingTemplate messagingTemplate;
     private final RedisManager redisManager;
@@ -53,10 +56,11 @@ public class ChatFacade {
 
         List<Long> userIds = userTeamCheckService.findAllUserIdByTeamId(teamId);
         for (Long userId : userIds) {
+            Language language = userCheckService.findLanguageByUserId(userId);
             CompletableFuture<String> translatedText = termManager.translate(
-                    result.getNewChat(), result.getTerms(), userId);
+                    result.getNewChat(), result.getTerms(), language);
             translatedText.thenAccept(text -> {
-                System.out.println(text);
+                translationService.createTranslation(text, language, chat.getId());
                 messagingTemplate.convertAndSend(TRANSLATE_SUB_URL + teamId + "/" + userId,
                         ChatConverter.toTranslatedTextResponseDto(text, chat.getId()));
             });
@@ -74,7 +78,9 @@ public class ChatFacade {
     }
 
     public Map<String, Object> findAllChats(final Long cursorId, final Long userId, final Long teamId) {
-        Slice<ChatMessageWithIsReadResponseDto> chatSlice = chatCheckService.findAllChatsByTeamId(cursorId, teamId);
+        Language language = userCheckService.findLanguageByUserId(userId);
+        Slice<ChatMessageWithIsReadResponseDto> chatSlice = chatCheckService.findAllChatsByTeamId(cursorId, teamId,
+                language);
         LocalDateTime accessDate = userTeamCheckService.findAccessDateByUserIdAndTeamId(userId, teamId);
         for (ChatMessageWithIsReadResponseDto chatMessage : chatSlice.getContent()) {
             chatMessage.setRead(chatMessage.getSendTime().isBefore(accessDate));

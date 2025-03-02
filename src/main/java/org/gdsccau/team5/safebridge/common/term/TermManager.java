@@ -71,7 +71,8 @@ public class TermManager {
     }
 
     @Async("threadPoolTaskExecutor")
-    public CompletableFuture<String> translate(final String text, final List<TermDataDto> terms, final Long userId) {
+    public CompletableFuture<String> translate(final String text, final List<TermDataDto> terms,
+                                               final Language language) {
         return CompletableFuture.supplyAsync(() -> {
             try (InputStream inputStream = new ClassPathResource(credentialPath).getInputStream()) {
                 GoogleCredentials credentials = ServiceAccountCredentials.fromStream(inputStream);
@@ -79,10 +80,9 @@ public class TermManager {
                         .setCredentials(credentials)
                         .build()
                         .getService();
-                // TODO 현재 User의 사용 언어를 받아와서 targetLanguage에 넣어야 한다!
                 Translation translation = translate.translate(text,
                         Translate.TranslateOption.sourceLanguage(SOURCE_LANGUAGE_CODE),
-                        Translate.TranslateOption.targetLanguage("en"));
+                        Translate.TranslateOption.targetLanguage(language.getCode()));
                 return translation.getTranslatedText().replaceAll("&#39;", "'");
             } catch (IOException e) {
                 log.error("Google Translate API 호출 중 오류 발생", e);

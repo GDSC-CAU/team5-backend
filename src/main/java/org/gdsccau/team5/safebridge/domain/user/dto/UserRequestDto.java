@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.gdsccau.team5.safebridge.common.term.Language;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -11,4 +12,5 @@ import lombok.NoArgsConstructor;
 @Builder
 public class UserRequestDto {
     private String name;
+    private Language language;
 }

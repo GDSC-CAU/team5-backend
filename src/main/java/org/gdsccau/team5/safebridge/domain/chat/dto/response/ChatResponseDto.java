@@ -15,6 +15,7 @@ public class ChatResponseDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ChatMessageResponseDto {
+        Long chatId;
         String name;
         String message;
         LocalDateTime sendTime;
@@ -29,6 +30,7 @@ public class ChatResponseDto {
         Long chatId;
         String name;
         String message;
+        String translatedMessage;
         boolean isRead;
         LocalDateTime sendTime;
 

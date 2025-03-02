@@ -17,6 +17,7 @@ public class ChatConverter {
     public static ChatResponseDto.ChatMessageResponseDto toChatResponseDto(
             final String name, final Chat chat, final List<TermDataDto> terms) {
         return ChatResponseDto.ChatMessageResponseDto.builder()
+                .chatId(chat.getId())
                 .name(name)
                 .message(chat.getText())
                 .sendTime(chat.getCreatedAt())
