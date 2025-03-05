@@ -41,3 +41,6 @@ out/
 .env
 **/application-database.yml
 
+
+# dotenv
+.env
