@@ -37,5 +37,10 @@ out/
 ### VS Code ###
 .vscode/
 
+# dotenv
+.env
 **/application-database.yml
-**/google-credentials.json
+
+
+# dotenv
+.env
