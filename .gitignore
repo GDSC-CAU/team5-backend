@@ -38,9 +38,10 @@ out/
 .vscode/
 
 # dotenv
-.env
+src/main/resources/.env
 **/application-database.yml
-
+**/application.yml
+.env
 
 # dotenv
-.env
+src/main/resources/.env
