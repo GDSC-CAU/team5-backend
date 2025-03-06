@@ -19,7 +19,3 @@ spring:
       host: localhost
       port: 6379
       timeout: 6
-
-#  sql:
-#    init:
-#      mode: always
