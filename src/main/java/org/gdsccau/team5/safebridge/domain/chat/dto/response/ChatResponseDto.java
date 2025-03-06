@@ -15,6 +15,7 @@ public class ChatResponseDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ChatMessageResponseDto {
+        Long chatId;
         String name;
         String message;
         LocalDateTime sendTime;
@@ -29,11 +30,21 @@ public class ChatResponseDto {
         Long chatId;
         String name;
         String message;
+        String translatedMessage;
         boolean isRead;
         LocalDateTime sendTime;
 
         public void setRead(boolean isRead) {
             this.isRead = isRead;
         }
+    }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TranslatedTextResponseDto {
+        Long chatId;
+        String translatedText;
     }
 }
