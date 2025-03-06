@@ -45,6 +45,7 @@ dependencies {
 
     implementation 'org.ahocorasick:ahocorasick:0.6.3'
     implementation 'com.google.cloud:google-cloud-translate:2.6.0'
+    implementation 'io.netty:netty-resolver-dns-native-macos:4.1.108.Final'
 }
 
 tasks.named('test') {
