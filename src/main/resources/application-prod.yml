@@ -35,3 +35,17 @@ google:
     auth_provider_x509_cert_url: ${GOOGLE_AUTH_PROVIDER_URL}
     client_x509_cert_url: ${GOOGLE_CLIENT_URL}
     universe_domain: ${GOOGLE_DOMAIN}
+
+logging:
+  pattern:
+    console: "[%d{HH:mm:ss.SSS}][%-5level][%logger.%method:line%line] - %msg%n"
+    file: "[%d{yyyy-MM-dd HH:mm:ss.SSS}][%-5level][%logger.%method:line%line] - %msg%n"
+  level:
+    com.example.log: debug
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 7
+      file-name-pattern: my-app-%d{yyyy-MM-dd}.log.gz
+  file:
+    name: /var/log/server.log
