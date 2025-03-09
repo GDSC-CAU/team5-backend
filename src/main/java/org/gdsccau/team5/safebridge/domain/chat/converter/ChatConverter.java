@@ -1,6 +1,7 @@
 package org.gdsccau.team5.safebridge.domain.chat.converter;
 
 import java.util.List;
+import java.util.Map;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataDto;
@@ -26,9 +27,10 @@ public class ChatConverter {
     }
 
     public static TranslatedTextResponseDto toTranslatedTextResponseDto(
-            final String translatedText, final Long chatId) {
+            final String translatedText, final Map<String, String> translatedTerms, final Long chatId) {
         return TranslatedTextResponseDto.builder()
                 .translatedText(translatedText)
+                .translatedTerms(translatedTerms)
                 .chatId(chatId)
                 .build();
     }

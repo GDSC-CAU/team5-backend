@@ -1,5 +1,6 @@
 package org.gdsccau.team5.safebridge.domain.chat.service;
 
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,6 +9,7 @@ import org.gdsccau.team5.safebridge.common.exception.handler.ExceptionHandler;
 import org.gdsccau.team5.safebridge.common.term.Language;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.ChatMetaDataDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.response.ChatResponseDto.ChatMessageWithIsReadResponseDto;
+import org.gdsccau.team5.safebridge.domain.chat.dto.response.ChatResponseDto.WorkResponseDto;
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
 import org.gdsccau.team5.safebridge.domain.chat.repository.ChatCustomRepository;
 import org.gdsccau.team5.safebridge.domain.chat.repository.ChatRepository;
@@ -52,6 +54,11 @@ public class ChatCheckService {
                 language, pageable);
         this.validateChatData(dtos.getContent());
         return dtos;
+    }
+
+    @Transactional(readOnly = true)
+    public List<WorkResponseDto> findAllWorks(final Long userId) {
+        return chatRepository.findAllWorksByUserId(userId);
     }
 
     private <T> void validateChatData(final T data) {
