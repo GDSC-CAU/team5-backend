@@ -12,7 +12,8 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addMapping("/**")
             .allowedMethods("*")
             .allowedHeaders("Authorization", "Content-Type")
-            .allowedOrigins("http://localhost:3000")
-            .allowedOrigins("https://safebridge.site/");
+            .allowedOrigins("*");
+//            .allowedOrigins("http://localhost:3000")
+//            .allowedOrigins("https://safebridge.site/");
     }
 }
