@@ -1,5 +1,6 @@
 package org.gdsccau.team5.safebridge.domain.user.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.gdsccau.team5.safebridge.common.code.success.CommonSuccessCode;
 import org.gdsccau.team5.safebridge.common.response.ApiResponse;
@@ -21,7 +22,7 @@ public class UserController {
 
   @PostMapping("/auth/login")
   public ApiResponse<UserResponseDto.LoginDto> login(
-      @RequestBody final UserRequestDto.LoginDto loginDto) {
+      @RequestBody @Valid final UserRequestDto.LoginDto loginDto) {
     UserResponseDto.LoginDto loginResponseDto = userAuthService.login(loginDto);
 
     return ApiResponse.onSuccess(CommonSuccessCode.OK, loginResponseDto);
@@ -29,7 +30,7 @@ public class UserController {
 
   @PostMapping("/auth/user/signup")
   public ApiResponse<UserResponseDto.SignUpDto> signUp(
-      @RequestBody final UserRequestDto.UserSignUpDto userSignUpDto) {
+      @RequestBody @Valid final UserRequestDto.UserSignUpDto userSignUpDto) {
 
     SignUpDto signUpResponseDto = userAuthService.signUpUser(userSignUpDto);
 
@@ -38,7 +39,7 @@ public class UserController {
 
   @PostMapping("/auth/admin/signup")
   public ApiResponse<SignUpDto> adminSignUp(
-      @RequestBody final UserRequestDto.AdminSignUpDto adminSignUpDto) {
+      @RequestBody @Valid final UserRequestDto.AdminSignUpDto adminSignUpDto) {
 
     UserResponseDto.SignUpDto signUoResponseDto = userAuthService.signUpAdmin(adminSignUpDto);
 

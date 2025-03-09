@@ -60,6 +60,8 @@ public class UserAuthService {
    */
   public SignUpDto signUpUser(final UserSignUpDto userSignUpDto) {
 
+    this.validateLoginIdDuplication(userSignUpDto.loginId());
+
     User user = User.builder()
         .loginId(userSignUpDto.loginId())
         .name(userSignUpDto.name())
@@ -76,6 +78,8 @@ public class UserAuthService {
   }
 
   public UserResponseDto.SignUpDto signUpAdmin(final AdminSignUpDto adminSignUpDto) {
+    this.validateLoginIdDuplication(adminSignUpDto.loginId());
+
     User user = User.builder()
         .loginId(adminSignUpDto.loginId())
         .name(adminSignUpDto.name())
@@ -111,5 +115,12 @@ public class UserAuthService {
   private boolean checkUserPassword(final User user, final String password) {
 
     return passwordEncoder.matches(password, user.getPassword());
+  }
+
+  private void validateLoginIdDuplication(final String loginId) {
+
+    if (userRepository.existsByLoginId(loginId)) {
+      throw new ExceptionHandler(AuthErrorCode.LOGIN_ID_ALREADY_EXIST);
+    }
   }
 }
