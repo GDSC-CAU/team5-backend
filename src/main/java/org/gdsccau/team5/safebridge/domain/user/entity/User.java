@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.gdsccau.team5.safebridge.common.term.Language;
 import org.gdsccau.team5.safebridge.domain.BaseEntity;
+import org.gdsccau.team5.safebridge.domain.user.enums.Role;
 
 @Entity
 @Getter
@@ -31,6 +32,9 @@ public class User extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     private Language language;
+
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     private String loginId;
 

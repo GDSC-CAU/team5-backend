@@ -1,10 +1,12 @@
 package org.gdsccau.team5.safebridge.domain.user.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.gdsccau.team5.safebridge.common.code.success.CommonSuccessCode;
 import org.gdsccau.team5.safebridge.common.response.ApiResponse;
 import org.gdsccau.team5.safebridge.domain.user.dto.UserRequestDto;
 import org.gdsccau.team5.safebridge.domain.user.dto.UserResponseDto;
+import org.gdsccau.team5.safebridge.domain.user.dto.UserResponseDto.SignUpDto;
 import org.gdsccau.team5.safebridge.domain.user.service.UserAuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,27 +22,27 @@ public class UserController {
 
   @PostMapping("/auth/login")
   public ApiResponse<UserResponseDto.LoginDto> login(
-      @RequestBody final UserRequestDto.LoginDto loginDto) {
+      @RequestBody @Valid final UserRequestDto.LoginDto loginDto) {
     UserResponseDto.LoginDto loginResponseDto = userAuthService.login(loginDto);
 
     return ApiResponse.onSuccess(CommonSuccessCode.OK, loginResponseDto);
   }
 
   @PostMapping("/auth/user/signup")
-  public ApiResponse<UserResponseDto.LoginDto> signUp(@RequestBody final UserRequestDto.UserSignUpDto userSignUpDto) {
+  public ApiResponse<UserResponseDto.SignUpDto> signUp(
+      @RequestBody @Valid final UserRequestDto.UserSignUpDto userSignUpDto) {
 
-    UserResponseDto.LoginDto signUoResponseDto = userAuthService.signUpUser(userSignUpDto);
+    SignUpDto signUpResponseDto = userAuthService.signUpUser(userSignUpDto);
+
+    return ApiResponse.onSuccess(CommonSuccessCode.OK, signUpResponseDto);
+  }
+
+  @PostMapping("/auth/admin/signup")
+  public ApiResponse<SignUpDto> adminSignUp(
+      @RequestBody @Valid final UserRequestDto.AdminSignUpDto adminSignUpDto) {
+
+    UserResponseDto.SignUpDto signUoResponseDto = userAuthService.signUpAdmin(adminSignUpDto);
 
     return ApiResponse.onSuccess(CommonSuccessCode.OK, signUoResponseDto);
   }
-//
-//    @PostMapping("/auth/admin/signup")
-//    public ApiResponse<Void> adminSignUp(@RequestBody final UserRequestDto userRequestDto) {
-//        User user = User.builder()
-//            .name(userRequestDto.getName())
-//            .language(userRequestDto.getLanguage())
-//            .build();
-//        userRepository.save(user);
-//        return ApiResponse.onSuccess(CommonSuccessCode.OK);
-//    }
 }
