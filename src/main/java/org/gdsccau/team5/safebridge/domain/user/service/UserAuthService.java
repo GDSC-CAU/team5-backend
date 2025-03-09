@@ -3,10 +3,14 @@ package org.gdsccau.team5.safebridge.domain.user.service;
 import jakarta.transaction.Transactional;
 import org.gdsccau.team5.safebridge.common.code.error.AuthErrorCode;
 import org.gdsccau.team5.safebridge.common.exception.handler.ExceptionHandler;
+import org.gdsccau.team5.safebridge.domain.user.dto.UserRequestDto;
+import org.gdsccau.team5.safebridge.domain.user.dto.UserRequestDto.AdminSignUpDto;
 import org.gdsccau.team5.safebridge.domain.user.dto.UserRequestDto.LoginDto;
 import org.gdsccau.team5.safebridge.domain.user.dto.UserRequestDto.UserSignUpDto;
 import org.gdsccau.team5.safebridge.domain.user.dto.UserResponseDto;
+import org.gdsccau.team5.safebridge.domain.user.dto.UserResponseDto.SignUpDto;
 import org.gdsccau.team5.safebridge.domain.user.entity.User;
+import org.gdsccau.team5.safebridge.domain.user.enums.Role;
 import org.gdsccau.team5.safebridge.domain.user.repository.UserRepository;
 import org.gdsccau.team5.safebridge.domain.user.utils.JwtUtil;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -45,7 +49,7 @@ public class UserAuthService {
 
     String token = jwtUtil.getAccessToken(user.getId());
 
-    return new UserResponseDto.LoginDto(user.getId(), token);
+    return new UserResponseDto.LoginDto(user.getId(), user.getRole(), token);
   }
 
   /**
@@ -54,12 +58,13 @@ public class UserAuthService {
    * @param userSignUpDto 회원가입 dto
    * @return user
    */
-  public UserResponseDto.LoginDto signUpUser(final UserSignUpDto userSignUpDto) {
+  public SignUpDto signUpUser(final UserSignUpDto userSignUpDto) {
 
     User user = User.builder()
         .loginId(userSignUpDto.loginId())
         .name(userSignUpDto.name())
         .language(userSignUpDto.language())
+        .role(Role.MEMBER)
         .password(passwordEncoder.encode(userSignUpDto.password()))
         .build();
 
@@ -67,7 +72,22 @@ public class UserAuthService {
 
     String token = jwtUtil.getAccessToken(user.getId());
 
-    return new UserResponseDto.LoginDto(user.getId(), token);
+    return new UserResponseDto.SignUpDto(user.getId(), user.getRole(), token);
+  }
+
+  public UserResponseDto.SignUpDto signUpAdmin(final AdminSignUpDto adminSignUpDto) {
+    User user = User.builder()
+        .loginId(adminSignUpDto.loginId())
+        .name(adminSignUpDto.name())
+        .role(Role.ADMIN)
+        .password(passwordEncoder.encode(adminSignUpDto.password()))
+        .build();
+
+    userRepository.save(user);
+
+    String token = jwtUtil.getAccessToken(user.getId());
+
+    return new UserResponseDto.SignUpDto(user.getId(), user.getRole(), token);
   }
 
   /**
@@ -83,7 +103,8 @@ public class UserAuthService {
 
   /**
    * 유저 비밀번호 검증
-   * @param user 유저
+   *
+   * @param user     유저
    * @param password 비밀번호
    * @return 매치 여부
    */

@@ -19,4 +19,9 @@ public record UserRequestDto(
                               String password) {
 
   }
+
+  public record AdminSignUpDto(String name, String loginId,
+                               String password) {
+
+  }
 }
