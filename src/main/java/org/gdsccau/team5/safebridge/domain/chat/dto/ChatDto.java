@@ -2,6 +2,7 @@ package org.gdsccau.team5.safebridge.domain.chat.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -36,5 +37,14 @@ public class ChatDto {
     public static class TermDataWithNewChatDto{
         List<TermDataDto> terms;
         String newChat;
+    }
+
+    @Builder
+    @Getter
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class TranslatedDataDto{
+        String translatedText;
+        Map<String, String> translatedTerms;
     }
 }

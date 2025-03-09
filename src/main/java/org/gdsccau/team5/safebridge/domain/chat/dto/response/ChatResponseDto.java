@@ -2,6 +2,7 @@ package org.gdsccau.team5.safebridge.domain.chat.dto.response;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -46,5 +47,16 @@ public class ChatResponseDto {
     public static class TranslatedTextResponseDto {
         Long chatId;
         String translatedText;
+        Map<String, String> translatedTerms;
+    }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class WorkResponseDto {
+        Long chatId;
+        Long teamId;
+        String text;
     }
 }

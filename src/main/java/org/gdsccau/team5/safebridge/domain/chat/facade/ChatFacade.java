@@ -4,29 +4,24 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.gdsccau.team5.safebridge.common.term.Language;
 import org.gdsccau.team5.safebridge.common.term.TermManager;
-import org.gdsccau.team5.safebridge.domain.chat.converter.ChatConverter;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataWithNewChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.request.ChatRequestDto.ChatMessageRequestDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.response.ChatResponseDto.ChatMessageWithIsReadResponseDto;
+import org.gdsccau.team5.safebridge.domain.chat.dto.response.ChatResponseDto.WorkResponseDto;
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
 import org.gdsccau.team5.safebridge.domain.chat.service.ChatCheckService;
 import org.gdsccau.team5.safebridge.domain.chat.service.ChatSendService;
 import org.gdsccau.team5.safebridge.domain.chat.service.ChatService;
-import org.gdsccau.team5.safebridge.domain.team.dto.response.TeamResponseDto.TeamListDto;
 import org.gdsccau.team5.safebridge.domain.team.entity.Team;
 import org.gdsccau.team5.safebridge.domain.team.service.TeamCheckService;
-import org.gdsccau.team5.safebridge.domain.translation.service.TranslationService;
 import org.gdsccau.team5.safebridge.domain.user.entity.User;
 import org.gdsccau.team5.safebridge.domain.user.service.UserCheckService;
 import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamCheckService;
 import org.springframework.data.domain.Slice;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,12 +45,10 @@ public class ChatFacade {
         for (Long userId : userIds) {
             Language language = userCheckService.findLanguageByUserId(userId);
             chatSendService.sendTranslatedMessage(result, language, chat, teamId, userId);
-            // TODO 현장 용어에 대한 번역 처리
             chatSendService.sendTeamData(chat, teamId, userId);
         }
     }
 
-    @Transactional
     public Chat createChat(final ChatMessageRequestDto chatRequestDto, final Long teamId) {
         User user = userCheckService.findByUserId(chatRequestDto.getUserId());
         Team team = teamCheckService.findByTeamId(teamId);
@@ -74,5 +67,9 @@ public class ChatFacade {
         response.put("messages", chatSlice.getContent());
         response.put("hasNext", chatSlice.hasNext());
         return response;
+    }
+
+    public List<WorkResponseDto> findAllWorks(final Long userId) {
+        return chatCheckService.findAllWorks(userId);
     }
 }
