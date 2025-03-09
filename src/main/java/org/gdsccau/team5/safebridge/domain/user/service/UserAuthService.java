@@ -3,7 +3,6 @@ package org.gdsccau.team5.safebridge.domain.user.service;
 import jakarta.transaction.Transactional;
 import org.gdsccau.team5.safebridge.common.code.error.AuthErrorCode;
 import org.gdsccau.team5.safebridge.common.exception.handler.ExceptionHandler;
-import org.gdsccau.team5.safebridge.domain.user.dto.UserRequestDto;
 import org.gdsccau.team5.safebridge.domain.user.dto.UserRequestDto.AdminSignUpDto;
 import org.gdsccau.team5.safebridge.domain.user.dto.UserRequestDto.LoginDto;
 import org.gdsccau.team5.safebridge.domain.user.dto.UserRequestDto.UserSignUpDto;
@@ -56,7 +55,7 @@ public class UserAuthService {
    * User 생성(회원가입) 로직
    *
    * @param userSignUpDto 회원가입 dto
-   * @return user
+   * @return dto
    */
   public SignUpDto signUpUser(final UserSignUpDto userSignUpDto) {
 
@@ -77,6 +76,12 @@ public class UserAuthService {
     return new UserResponseDto.SignUpDto(user.getId(), user.getRole(), token);
   }
 
+  /**
+   * 관리자 회원가입
+   *
+   * @param adminSignUpDto 관리자 회원가입 dto
+   * @return dto
+   */
   public UserResponseDto.SignUpDto signUpAdmin(final AdminSignUpDto adminSignUpDto) {
     this.validateLoginIdDuplication(adminSignUpDto.loginId());
 
@@ -117,6 +122,10 @@ public class UserAuthService {
     return passwordEncoder.matches(password, user.getPassword());
   }
 
+  /**
+   * 로그인 아이디 중복 검사
+   * @param loginId 로그인 아이디
+   */
   private void validateLoginIdDuplication(final String loginId) {
 
     if (userRepository.existsByLoginId(loginId)) {
