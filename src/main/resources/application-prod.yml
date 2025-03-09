@@ -49,3 +49,6 @@ logging:
       file-name-pattern: my-app-%d{yyyy-MM-dd}.log.gz
   file:
     name: /var/log/server.log
+
+auth:
+  secretKey: ${JWT_SECRET_KEY}
