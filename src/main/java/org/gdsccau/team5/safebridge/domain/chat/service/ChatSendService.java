@@ -9,6 +9,7 @@ import org.gdsccau.team5.safebridge.common.term.Language;
 import org.gdsccau.team5.safebridge.common.term.TermManager;
 import org.gdsccau.team5.safebridge.domain.chat.converter.ChatConverter;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataWithNewChatDto;
+import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TranslatedDataDto;
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
 import org.gdsccau.team5.safebridge.domain.team.dto.response.TeamResponseDto.TeamListDto;
 import org.gdsccau.team5.safebridge.domain.team.service.TeamCheckService;
@@ -41,12 +42,12 @@ public class ChatSendService {
 
     public void sendTranslatedMessage(final TermDataWithNewChatDto result, final Language language, final Chat chat,
                                       final Long teamId, final Long userId) {
-        CompletableFuture<String> translatedText = termManager.translate(
+        CompletableFuture<TranslatedDataDto> translatedText = termManager.translate(
                 result.getNewChat(), result.getTerms(), language);
-        translatedText.thenAccept(text -> {
-            translationService.createTranslation(text, language, chat.getId());
+        translatedText.thenAccept(dto -> {
+            translationService.createTranslation(dto.getTranslatedText(), language, chat.getId());
             messagingTemplate.convertAndSend(TRANSLATE_SUB_URL + teamId + "/" + userId,
-                    ChatConverter.toTranslatedTextResponseDto(text, chat.getId()));
+                    ChatConverter.toTranslatedTextResponseDto(dto.getTranslatedText(), dto.getTranslatedTerms(), chat.getId()));
         });
         // TODO 예외처리
     }

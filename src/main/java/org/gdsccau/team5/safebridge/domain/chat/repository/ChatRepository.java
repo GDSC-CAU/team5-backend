@@ -1,6 +1,8 @@
 package org.gdsccau.team5.safebridge.domain.chat.repository;
 
+import java.util.List;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.ChatMetaDataDto;
+import org.gdsccau.team5.safebridge.domain.chat.dto.response.ChatResponseDto.WorkResponseDto;
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,4 +16,10 @@ public interface ChatRepository extends JpaRepository<Chat, Long> {
             + "WHERE c.team.id = :teamId "
             + "ORDER BY c.createdAt DESC")
     Page<ChatMetaDataDto> findChatMetaDataDtoByTeamId(final Long teamId, final Pageable pageable);
+
+    @Query("SELECT new org.gdsccau.team5.safebridge.domain.chat.dto.response.ChatResponseDto$WorkResponseDto(c.id, c.team.id, c.text) "
+            + "FROM Chat c "
+            + "WHERE c.user.id = :userId AND c.isTodo is true "
+            + "ORDER BY c.createdAt DESC")
+    List<WorkResponseDto> findAllWorksByUserId(final Long userId);
 }

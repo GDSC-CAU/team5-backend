@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -20,8 +21,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.ahocorasick.trie.Emit;
 import org.ahocorasick.trie.Trie;
 import org.ahocorasick.trie.Trie.TrieBuilder;
+import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataWithNewChatDto;
+import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TranslatedDataDto;
+import org.gdsccau.team5.safebridge.domain.term.entity.Term;
+import org.gdsccau.team5.safebridge.domain.term.service.TermCheckService;
+import org.gdsccau.team5.safebridge.domain.term.service.TermService;
+import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermCheckService;
+import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -55,10 +63,18 @@ public class TermManager {
 
     private static final String SOURCE_LANGUAGE_CODE = "ko";
 
-    private Trie trie;
-    private Map<String, String> termsWithMeaning;
+    private final RedisManager redisManager;
+    private final TermCheckService termCheckService;
+    private final TermService termService;
+    private final TranslatedTermCheckService translatedTermCheckService;
+    private final TranslatedTermService translatedTermService;
 
-    public TermManager() {
+    private final Trie trie;
+    private final Map<String, String> termsWithMeaning;
+
+    public TermManager(final RedisManager redisManager, final TermCheckService termCheckService,
+                       final TermService termService, final TranslatedTermCheckService translatedTermCheckService,
+                       final TranslatedTermService translatedTermService) {
         Set<String> terms = TermLoader.loadTermsOnly();
         TrieBuilder builder = Trie.builder();
         for (String term : terms) {
@@ -66,6 +82,11 @@ public class TermManager {
         }
         this.trie = builder.build();
         this.termsWithMeaning = TermLoader.loadTermsWithMeaning();
+        this.redisManager = redisManager;
+        this.termCheckService = termCheckService;
+        this.termService = termService;
+        this.translatedTermCheckService = translatedTermCheckService;
+        this.translatedTermService = translatedTermService;
     }
 
     public TermDataWithNewChatDto query(final String chat) {
@@ -93,8 +114,8 @@ public class TermManager {
     }
 
     @Async("threadPoolTaskExecutor")
-    public CompletableFuture<String> translate(final String text, final List<TermDataDto> terms,
-                                               final Language language) {
+    public CompletableFuture<TranslatedDataDto> translate(final String text, final List<TermDataDto> termDataDtos,
+                                                          final Language language) {
         return CompletableFuture.supplyAsync(() -> {
             try (InputStream inputStream = getCredentialsStream()) {
                 GoogleCredentials credentials = ServiceAccountCredentials.fromStream(inputStream);
@@ -105,10 +126,12 @@ public class TermManager {
                 Translation translation = translate.translate(text,
                         Translate.TranslateOption.sourceLanguage(SOURCE_LANGUAGE_CODE),
                         Translate.TranslateOption.targetLanguage(language.getCode()));
-                return translation.getTranslatedText().replaceAll("&#39;", "'");
+                Map<String, String> translatedTerms = this.translateTerms(translate, termDataDtos, language);
+                String translatedText = translation.getTranslatedText().replaceAll("&#39;", "'");
+                return this.createdTranslatedDataDto(translatedText, translatedTerms);
             } catch (IOException e) {
                 log.error("Google Translate API 호출 중 오류 발생", e);
-                return "";
+                return this.createdTranslatedDataDto(null, null);
             }
         });
     }
@@ -162,5 +185,45 @@ public class TermManager {
                         """, type, projectId, privateKeyId, privateKey, clientEmail, clientId, authUri,
                 tokenUri, authProviderX509CertUrl, clientX509CertUrl, universeDomain);
         return new ByteArrayInputStream(jsonContent.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private Map<String, String> translateTerms(final Translate translate, final List<TermDataDto> termDataDtos,
+                                               final Language language) {
+        Map<String, String> result = new HashMap<>();
+        termDataDtos.forEach(termDataDto -> {
+            // 1. Term을 가져온다.
+            Term term = termCheckService.findTermByWord(termDataDto.getTerm());
+            if (term == null) {
+                term = termService.createTerm(termDataDto.getTerm());
+            }
+            // 2. Redis에서 번역본을 가져온다.
+            String translatedTermKey = redisManager.getTranslatedTermKey(term.getId(), language);
+            String translatedTerm =  redisManager.getTranslatedTerm(translatedTermKey);
+            // 3. Redis에 없으면 DB에서 가져온다.
+            if (translatedTerm == null) {
+                translatedTerm = translatedTermCheckService.findTranslatedTermByLanguageAndTermId(language, term.getId());
+            }
+            // 4. DB에도 없으면 번역 API를 호출한다.
+            if (translatedTerm == null) {
+                Translation translation = translate.translate(term.getWord(),
+                        Translate.TranslateOption.sourceLanguage(SOURCE_LANGUAGE_CODE),
+                        Translate.TranslateOption.targetLanguage(language.getCode()));
+                translatedTerm = translation.getTranslatedText().replaceAll("&#39;", "'");
+                // 5. 번역본을 DB에 저장한다.
+                translatedTermService.createTranslatedTerm(term, language, translatedTerm);
+            }
+            // 6. Redis에 새롭게 업데이트한다.
+            redisManager.updateTranslatedTerm(translatedTermKey, translatedTerm);
+            result.put(term.getWord(), translatedTerm);
+        });
+        return result;
+    }
+
+    private TranslatedDataDto createdTranslatedDataDto(final String translatedText,
+                                                       final Map<String, String> translatedTerms) {
+        return TranslatedDataDto.builder()
+                .translatedText(translatedText)
+                .translatedTerms(translatedTerms)
+                .build();
     }
 }

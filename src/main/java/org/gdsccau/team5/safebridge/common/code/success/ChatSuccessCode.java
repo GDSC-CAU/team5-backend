@@ -9,7 +9,8 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public enum ChatSuccessCode implements SuccessCode {
 
-    FIND_CHAT_IN_TEAM(HttpStatus.OK, "CHAT2001", "채팅방에 속한 모든 채팅 가져오기 성공");
+    FIND_CHAT_IN_TEAM(HttpStatus.OK, "CHAT2001", "채팅방에 속한 모든 채팅 가져오기 성공"),
+    FIND_ALL_WORK(HttpStatus.OK, "CHAT2002", "노동자의 모든 할 일 가져오기 성공");
 
     private final HttpStatus httpStatus;
     private final String code;

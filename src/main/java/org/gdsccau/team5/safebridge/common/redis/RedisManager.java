@@ -5,6 +5,7 @@ import java.time.ZoneId;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.gdsccau.team5.safebridge.common.term.Language;
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
@@ -26,6 +27,10 @@ public class RedisManager {
 
     public String getZSetKey(final Long userId) {
         return "userId:" + userId + ":team";
+    }
+
+    public String getTranslatedTermKey(final Long termId, final Language language) {
+        return "termId:" + termId + ":language:" + language.getCode() + ":translated";
     }
 
     public int getInRoom(final String inRoomKey) {
@@ -54,12 +59,18 @@ public class RedisManager {
         redisTemplate.opsForZSet().add(zSetKey, String.valueOf(teamId), score);
     }
 
+    public String getTranslatedTerm(final String translatedTermKey) {
+        return redisTemplate.opsForValue().get(translatedTermKey);
+    }
+
+    public void updateTranslatedTerm(final String translatedTermKey, final String translatedTerm) {
+        redisTemplate.opsForValue().set(translatedTermKey, translatedTerm);
+    }
+
     public void initRedis(final Long userId, final Long teamId) {
         String inRoomKey = this.getInRoomKey(userId, teamId);
         String unReadMessageKey = this.getUnReadMessageKey(userId, teamId);
         String zSetKey = this.getZSetKey(userId);
-        log.info("Saving to Redis: inRoomKey={}, unReadMessageKey={}, zSetKey={}",
-                inRoomKey, unReadMessageKey, zSetKey);
 
         long score = LocalDateTime.now()
                 .atZone(ZoneId.of("Asia/Seoul"))
