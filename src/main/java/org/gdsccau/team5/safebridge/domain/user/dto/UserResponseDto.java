@@ -5,10 +5,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Builder
-@Getter
-@AllArgsConstructor
-@NoArgsConstructor
-public class UserResponseDto {
-    Long userId;
+public record UserResponseDto() {
+  public record LoginDto(Long id, String token) {}
 }

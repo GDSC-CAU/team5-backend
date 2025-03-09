@@ -31,4 +31,8 @@ public class User extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     private Language language;
+
+    private String loginId;
+
+    private String password;
 }

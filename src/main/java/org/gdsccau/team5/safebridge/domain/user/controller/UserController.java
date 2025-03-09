@@ -5,8 +5,8 @@ import org.gdsccau.team5.safebridge.common.code.success.CommonSuccessCode;
 import org.gdsccau.team5.safebridge.common.response.ApiResponse;
 import org.gdsccau.team5.safebridge.domain.user.dto.UserRequestDto;
 import org.gdsccau.team5.safebridge.domain.user.dto.UserResponseDto;
-import org.gdsccau.team5.safebridge.domain.user.entity.User;
-import org.gdsccau.team5.safebridge.domain.user.repository.UserRepository;
+import org.gdsccau.team5.safebridge.domain.user.service.UserAuthService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -15,24 +15,32 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserRepository userRepository;
+  @Autowired
+  UserAuthService userAuthService;
 
-    @PostMapping("/user/login")
-    public ApiResponse<UserResponseDto> login(@RequestBody final UserRequestDto userRequestDto) {
-        User user = userRepository.findByUsername(userRequestDto.getName());
-        UserResponseDto userResponseDto = UserResponseDto.builder()
-                .userId(user.getId())
-                .build();
-        return ApiResponse.onSuccess(CommonSuccessCode.OK, userResponseDto);
-    }
+  @PostMapping("/auth/login")
+  public ApiResponse<UserResponseDto.LoginDto> login(
+      @RequestBody final UserRequestDto.LoginDto loginDto) {
+    UserResponseDto.LoginDto loginResponseDto = userAuthService.login(loginDto);
 
-    @PostMapping("/user/signup")
-    public ApiResponse<Void> signup(@RequestBody final UserRequestDto userRequestDto) {
-        User user = User.builder()
-                .name(userRequestDto.getName())
-                .language(userRequestDto.getLanguage())
-                .build();
-        userRepository.save(user);
-        return ApiResponse.onSuccess(CommonSuccessCode.OK);
-    }
+    return ApiResponse.onSuccess(CommonSuccessCode.OK, loginResponseDto);
+  }
+
+  @PostMapping("/auth/user/signup")
+  public ApiResponse<UserResponseDto.LoginDto> signUp(@RequestBody final UserRequestDto.UserSignUpDto userSignUpDto) {
+
+    UserResponseDto.LoginDto signUoResponseDto = userAuthService.signUpUser(userSignUpDto);
+
+    return ApiResponse.onSuccess(CommonSuccessCode.OK, signUoResponseDto);
+  }
+//
+//    @PostMapping("/auth/admin/signup")
+//    public ApiResponse<Void> adminSignUp(@RequestBody final UserRequestDto userRequestDto) {
+//        User user = User.builder()
+//            .name(userRequestDto.getName())
+//            .language(userRequestDto.getLanguage())
+//            .build();
+//        userRepository.save(user);
+//        return ApiResponse.onSuccess(CommonSuccessCode.OK);
+//    }
 }
