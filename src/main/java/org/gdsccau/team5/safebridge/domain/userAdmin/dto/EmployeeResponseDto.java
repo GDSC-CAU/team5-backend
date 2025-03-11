@@ -1,11 +1,7 @@
-package org.gdsccau.team5.safebridge.domain.user.dto;
+package org.gdsccau.team5.safebridge.domain.userAdmin.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import lombok.Builder;
-import org.gdsccau.team5.safebridge.common.term.Language;
-import org.gdsccau.team5.safebridge.domain.user.entity.User;
 
 @Builder
 public record EmployeeResponseDto(
