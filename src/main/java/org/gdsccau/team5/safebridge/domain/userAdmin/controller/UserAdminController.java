@@ -7,7 +7,6 @@ import org.gdsccau.team5.safebridge.common.response.ApiResponse;
 import org.gdsccau.team5.safebridge.domain.userAdmin.dto.EmployeeResponseDto;
 import org.gdsccau.team5.safebridge.domain.userAdmin.dto.UserAdminRequestDto;
 import org.gdsccau.team5.safebridge.domain.userAdmin.dto.UserAdminResponseDto;
-import org.gdsccau.team5.safebridge.domain.userAdmin.service.EmployeeService;
 import org.gdsccau.team5.safebridge.domain.userAdmin.service.UserAdminService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,7 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserAdminController {
 
   private final UserAdminService userAdminService;
-  private final EmployeeService employeeService;
 
   @PostMapping("/admin/{adminId}/employees")
   public final ApiResponse<UserAdminResponseDto.CreateDto> createUserAdmin(
@@ -34,7 +32,7 @@ public class UserAdminController {
   @GetMapping("/admin/{adminId}/employees")
   public ApiResponse<EmployeeResponseDto.ListDto> list(
       @PathVariable("adminId") final Long adminId) {
-    EmployeeResponseDto.ListDto listDto = employeeService.getList(adminId);
+    EmployeeResponseDto.ListDto listDto = userAdminService.getList(adminId);
 
     return ApiResponse.onSuccess(CommonSuccessCode.OK, listDto);
   }

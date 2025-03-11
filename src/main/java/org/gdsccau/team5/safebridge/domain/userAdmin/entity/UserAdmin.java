@@ -8,12 +8,19 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.gdsccau.team5.safebridge.domain.BaseEntity;
 import org.gdsccau.team5.safebridge.domain.user.entity.User;
 
 @Entity
 @Builder
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class UserAdmin extends BaseEntity {
 
   @Id
@@ -25,7 +32,7 @@ public class UserAdmin extends BaseEntity {
   @JoinColumn(name = "admin_user_id")
   private User admin;
 
-  @ManyToOne(fetch = FetchType.LAZY)
+  @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "employee_user_id")
   private User employee;
 
