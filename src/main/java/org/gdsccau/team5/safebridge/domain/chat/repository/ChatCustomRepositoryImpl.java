@@ -5,6 +5,7 @@ import static org.gdsccau.team5.safebridge.domain.chat.entity.QChat.chat;
 import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import java.util.ArrayList;
@@ -59,7 +60,6 @@ public class ChatCustomRepositoryImpl implements ChatCustomRepository {
     ) {
         QChat chat = QChat.chat;
         QUser user = QUser.user;
-        QTranslation translation = QTranslation.translation;
         return queryFactory
                 .select(Projections.constructor(
                         ChatMessageWithIsReadResponseDto.class,
@@ -67,13 +67,12 @@ public class ChatCustomRepositoryImpl implements ChatCustomRepository {
                         user.id,
                         user.name,
                         chat.text,
-                        translation.text,
+                        Expressions.nullExpression(String.class),
                         ConstantImpl.create(false),
                         chat.createdAt
                 ))
                 .from(chat)
                 .join(user).on(user.id.eq(chat.user.id))
-                .join(translation).on(translation.chat.id.eq(chat.id))
                 .where(
                         chat.team.id.eq(teamId)
                                 .and(eqCursorId(cursorId))

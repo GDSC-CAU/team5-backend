@@ -14,7 +14,6 @@ import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -33,12 +32,12 @@ public class ChatController {
 
     @GetMapping("/chats/teams/{teamId}")
     public ApiResponse<Map<String, Object>> getMessages(
-//            @RequestHeader("Authorization") final String token,
             @PathVariable(name = "teamId") final Long teamId,
             @RequestParam(name = "userId") final Long userId,
-            @RequestParam(name = "cursorId", required = false) final Long cursorId) {
+            @RequestParam(name = "cursorId", required = false) final Long cursorId,
+            @RequestParam(name = "role") final String role) {
         return ApiResponse.onSuccess(ChatSuccessCode.FIND_CHAT_IN_TEAM,
-                chatFacade.findAllChats(cursorId, userId, teamId));
+                chatFacade.findAllChats(role, cursorId, userId, teamId));
     }
 
     @GetMapping("/chats/works")

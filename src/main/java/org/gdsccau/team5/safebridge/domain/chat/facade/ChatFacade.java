@@ -58,13 +58,11 @@ public class ChatFacade {
         return chatService.createChat(chatRequestDto, user, team);
     }
 
-    public Map<String, Object> findAllChats(final Long cursorId, final Long userId,
+    public Map<String, Object> findAllChats(final String role, final Long cursorId, final Long userId,
                                             final Long teamId) {
-        // TODO token에서 Role 꺼내서 findAllChatsByTeamId에 넘겨주기
-        Role role = Role.ADMIN; // 임시 코드
-
         Language language = userCheckService.findLanguageByUserId(userId);
-        Slice<ChatMessageWithIsReadResponseDto> chatSlice = chatCheckService.findAllChatsByTeamId(role, cursorId,
+        Slice<ChatMessageWithIsReadResponseDto> chatSlice = chatCheckService.findAllChatsByTeamId(Role.valueOf(role),
+                cursorId,
                 teamId, language);
         LocalDateTime accessDate = userTeamCheckService.findAccessDateByUserIdAndTeamId(userId, teamId);
         for (ChatMessageWithIsReadResponseDto chatMessage : chatSlice.getContent()) {
