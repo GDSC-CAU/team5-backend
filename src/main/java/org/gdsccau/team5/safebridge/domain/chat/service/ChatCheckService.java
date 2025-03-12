@@ -13,6 +13,7 @@ import org.gdsccau.team5.safebridge.domain.chat.dto.response.ChatResponseDto.Wor
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
 import org.gdsccau.team5.safebridge.domain.chat.repository.ChatCustomRepository;
 import org.gdsccau.team5.safebridge.domain.chat.repository.ChatRepository;
+import org.gdsccau.team5.safebridge.domain.user.enums.Role;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -46,11 +47,12 @@ public class ChatCheckService {
     }
 
     @Transactional(readOnly = true)
-    public Slice<ChatMessageWithIsReadResponseDto> findAllChatsByTeamId(final Long cursorId,
+    public Slice<ChatMessageWithIsReadResponseDto> findAllChatsByTeamId(final Role role,
+                                                                        final Long cursorId,
                                                                         final Long teamId,
                                                                         final Language language) {
         Pageable pageable = PageRequest.of(0, 5);
-        Slice<ChatMessageWithIsReadResponseDto> dtos = chatCustomRepository.findAllChatsByTeamId(cursorId, teamId,
+        Slice<ChatMessageWithIsReadResponseDto> dtos = chatCustomRepository.findAllChatsByTeamId(role, cursorId, teamId,
                 language, pageable);
         this.validateChatData(dtos.getContent());
         return dtos;
