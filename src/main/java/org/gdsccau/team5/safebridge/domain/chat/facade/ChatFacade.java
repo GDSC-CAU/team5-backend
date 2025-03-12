@@ -50,6 +50,7 @@ public class ChatFacade {
         }
     }
 
+    @Transactional
     public Chat createChat(final ChatMessageRequestDto chatRequestDto, final Long teamId) {
         User user = userCheckService.findByUserId(chatRequestDto.getUserId());
         Team team = teamCheckService.findByTeamId(teamId);
