@@ -66,7 +66,7 @@ public class ChatCustomRepositoryImpl implements ChatCustomRepository {
     }
 
     private BooleanExpression eqCursorId(final Long cursorId) {
-        if (cursorId != 0L) {
+        if (cursorId !=null && cursorId != 0L) {
             return chat.id.lt(cursorId);
         }
         return null;
