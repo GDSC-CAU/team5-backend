@@ -34,6 +34,7 @@ public class ChatResponseDto {
         String translatedMessage;
         boolean isRead;
         LocalDateTime sendTime;
+        Long userId;
 
         public void setRead(boolean isRead) {
             this.isRead = isRead;
