@@ -40,6 +40,7 @@ public class ChatCustomRepositoryImpl implements ChatCustomRepository {
         .select(Projections.constructor(
             ChatMessageWithIsReadResponseDto.class,
             chat.id,
+            user.id,
             user.name,
             chat.text,
             translation.text,

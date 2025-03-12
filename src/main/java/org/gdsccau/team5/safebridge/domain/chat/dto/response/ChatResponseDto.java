@@ -29,12 +29,12 @@ public class ChatResponseDto {
     @AllArgsConstructor
     public static class ChatMessageWithIsReadResponseDto {
         Long chatId;
+        Long userId;
         String name;
         String message;
         String translatedMessage;
         boolean isRead;
         LocalDateTime sendTime;
-        Long userId;
 
         public void setRead(boolean isRead) {
             this.isRead = isRead;
