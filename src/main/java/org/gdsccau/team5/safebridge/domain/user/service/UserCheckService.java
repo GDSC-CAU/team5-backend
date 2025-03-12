@@ -19,6 +19,6 @@ public class UserCheckService {
     }
 
     public Language findLanguageByUserId(final Long userId) {
-        return userRepository.findLanguageByUserId(userId).orElse(null);
+        return userRepository.findLanguageByUserId(userId).orElse(Language.KOREAN);
     }
 }
