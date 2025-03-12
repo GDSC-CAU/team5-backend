@@ -39,7 +39,7 @@ public class ReportService {
     try {
       String text = sttWebClient.requestStt(requestDto.file());
       User user = userCheckService.findByUserId(requestDto.userId());
-      User leader = userCheckService.findByUserId(requestDto.leaderId());
+      User leader = userCheckService.findByUserId(requestDto.adminId());
       Report report = ReportConverter.toReport(text, user, leader);
       reportRepository.save(report);
       return report;
