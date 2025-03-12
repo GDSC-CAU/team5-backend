@@ -36,5 +36,6 @@ public class UserAdmin extends BaseEntity {
   @JoinColumn(name = "employee_user_id")
   private User employee;
 
+  @Column(name="is_temporary_worker")
   private boolean isTemporaryWorker;
 }

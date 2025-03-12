@@ -55,6 +55,7 @@ public class ExceptionAdvice extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler
     public ResponseEntity<Object> exception(Exception e, WebRequest request) {
+        log.error("Exception occurred: {}", e.getMessage(), e); // 예외 로그 추가
         ErrorCode errorCode = ErrorCodeResolver.fromCodeName("INTERNAL_SERVER_ERROR");
         return handleExceptionInternalFalse(e, errorCode, HttpHeaders.EMPTY,
                 errorCode.getHttpStatus(), request, e.getMessage());
