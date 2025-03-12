@@ -199,11 +199,11 @@ public class TermManager {
             // 2. Redis에서 번역본을 가져온다.
             String translatedTermKey = redisManager.getTranslatedTermKey(term.getId(), language);
             String translatedTerm =  redisManager.getTranslatedTerm(translatedTermKey);
-            // 3. Redis에 없으면 DB에서 가져온다.
+            // 3. Redis에 없으면 DB에서 가져온다. -> 락을 활용해 같은 요청에 대해선 락을 획득한 요청만 DB를 조회한다.
             if (translatedTerm == null) {
                 translatedTerm = translatedTermCheckService.findTranslatedTermByLanguageAndTermId(language, term.getId());
             }
-            // 4. DB에도 없으면 번역 API를 호출한다.
+            // 4. DB에도 없으면 번역 API를 호출한다. (초기 1회, 불가피)
             if (translatedTerm == null) {
                 Translation translation = translate.translate(term.getWord(),
                         Translate.TranslateOption.sourceLanguage(SOURCE_LANGUAGE_CODE),
@@ -212,7 +212,7 @@ public class TermManager {
                 // 5. 번역본을 DB에 저장한다.
                 translatedTermService.createTranslatedTerm(term, language, translatedTerm);
             }
-            // 6. Redis에 새롭게 업데이트한다.
+            // 6. Redis에 저장한다. 이 때, 이미 저장되어 있다면 TTL을 갱신한다. (Write-Through)
             redisManager.updateTranslatedTerm(translatedTermKey, translatedTerm);
             result.put(term.getWord(), translatedTerm);
         });

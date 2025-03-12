@@ -67,6 +67,8 @@ public class ChatSendService {
             redisManager.updateUnReadMessage(unReadMessageKey);
         }
         redisManager.updateZSet(zSetKey, teamId, chat);
+
+        // TODO
         return createTeamListDto(
                 teamId, chat.getText(), chat.getCreatedAt(), redisManager.getUnReadMessage(unReadMessageKey)
         );

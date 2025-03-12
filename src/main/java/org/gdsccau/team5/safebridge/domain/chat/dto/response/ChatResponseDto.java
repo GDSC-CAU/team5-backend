@@ -29,6 +29,7 @@ public class ChatResponseDto {
     @AllArgsConstructor
     public static class ChatMessageWithIsReadResponseDto {
         Long chatId;
+        Long userId;
         String name;
         String message;
         String translatedMessage;

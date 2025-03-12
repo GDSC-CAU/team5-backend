@@ -48,6 +48,7 @@ public class RedisManager {
     }
 
     public Set<String> getZSet(final String zSetKey) {
+        // TODO Redis 서버가 다운되었을 때, DB에서 각 채팅방의 마지막 채팅 createdAt을 이용해 데이터를 로드한다.
         return redisTemplate.opsForZSet().reverseRange(zSetKey, 0, -1);
     }
 
