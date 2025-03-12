@@ -1,6 +1,5 @@
 package org.gdsccau.team5.safebridge.domain.term.service;
 
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.domain.term.entity.Term;
@@ -16,5 +15,9 @@ public class TermCheckService {
 
     public Term findTermByWord(final String word) {
         return termRepository.findTermByWord(word).orElse(null);
+    }
+
+    public Long findTermIdByWord(final String word) {
+        return termRepository.findTermIdByWord(word).orElse(null);
     }
 }

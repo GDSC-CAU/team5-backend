@@ -9,4 +9,7 @@ public interface TermRepository extends JpaRepository<Term, Long> {
 
     @Query("SELECT t FROM Term t WHERE t.word = :word")
     Optional<Term> findTermByWord(final String word);
+
+    @Query("SELECT t.id FROM Term t WHERE t.word = :word")
+    Optional<Long> findTermIdByWord(final String word);
 }

@@ -34,9 +34,10 @@ public class ChatController {
     public ApiResponse<Map<String, Object>> getMessages(
             @PathVariable(name = "teamId") final Long teamId,
             @RequestParam(name = "userId") final Long userId,
-            @RequestParam(name = "cursorId", required = false) final Long cursorId) {
+            @RequestParam(name = "cursorId", required = false) final Long cursorId,
+            @RequestParam(name = "role") final String role) {
         return ApiResponse.onSuccess(ChatSuccessCode.FIND_CHAT_IN_TEAM,
-                chatFacade.findAllChats(cursorId, userId, teamId));
+                chatFacade.findAllChats(role, cursorId, userId, teamId));
     }
 
     @GetMapping("/chats/works")

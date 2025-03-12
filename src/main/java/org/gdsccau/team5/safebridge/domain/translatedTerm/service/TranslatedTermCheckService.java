@@ -17,5 +17,4 @@ public class TranslatedTermCheckService {
     public String findTranslatedTermByLanguageAndTermId(final Language language, final Long termId) {
         return translatedTermRepository.findTranslatedTermByLanguageAndTermId(language, termId).orElse(null);
     }
-
 }
