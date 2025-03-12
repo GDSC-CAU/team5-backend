@@ -9,14 +9,16 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public enum ReportErrorCode implements ErrorCode {
 
-    REPORT_FILE_NOT_CORRECT(HttpStatus.INTERNAL_SERVER_ERROR, "REPORT4001", "Report audio file seems incorrect");
+  REPORT_FILE_NOT_CORRECT(HttpStatus.INTERNAL_SERVER_ERROR, "REPORT4001",
+      "Report audio file seems incorrect"),
+  ADMIN_NOT_FOUND(HttpStatus.NOT_FOUND, "REPORT4002", "admin not found");
 
-    private final HttpStatus httpStatus;
-    private final String code;
-    private final String message;
+  private final HttpStatus httpStatus;
+  private final String code;
+  private final String message;
 
-    @Override
-    public String getName() {
-        return this.name();
-    }
+  @Override
+  public String getName() {
+    return this.name();
+  }
 }

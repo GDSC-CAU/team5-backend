@@ -12,6 +12,7 @@ import org.gdsccau.team5.safebridge.domain.report.repository.ReportRepository;
 import org.gdsccau.team5.safebridge.domain.report.webClient.SttWebClient;
 import org.gdsccau.team5.safebridge.domain.user.entity.User;
 import org.gdsccau.team5.safebridge.domain.user.service.UserCheckService;
+import org.gdsccau.team5.safebridge.domain.userAdmin.service.UserAdminService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
@@ -24,14 +25,17 @@ public class ReportService {
   private final SttWebClient sttWebClient;
   private final ReportRepository reportRepository;
   private final UserCheckService userCheckService;
+  private final UserAdminService userAdminService;
 
   public ReportService(final SttWebClient sttWebClient,
       final ReportRepository reportRepository,
-      UserCheckService userCheckService
+      UserCheckService userCheckService,
+      UserAdminService userAdminService
   ) {
     this.sttWebClient = sttWebClient;
     this.reportRepository = reportRepository;
     this.userCheckService = userCheckService;
+    this.userAdminService = userAdminService;
   }
 
   public Report store(final ReportRequestDto requestDto) {
@@ -39,8 +43,9 @@ public class ReportService {
     try {
       String text = sttWebClient.requestStt(requestDto.file());
       User user = userCheckService.findByUserId(requestDto.userId());
-      User leader = userCheckService.findByUserId(requestDto.adminId());
-      Report report = ReportConverter.toReport(text, user, leader);
+      User admin = userAdminService.findAdminByEmployee(user);
+
+      Report report = ReportConverter.toReport(text, user, admin);
       reportRepository.save(report);
       return report;
 

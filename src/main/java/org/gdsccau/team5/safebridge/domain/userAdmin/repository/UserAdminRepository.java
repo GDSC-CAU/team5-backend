@@ -17,4 +17,6 @@ public interface UserAdminRepository extends JpaRepository<UserAdmin, Long> {
   List<UserAdminId> findAllByAdmin_IdAndIsTemporaryWorkerTrue(Long adminId);
 
   Optional<UserAdminId> findByAdmin_IdAndEmployeeId(Long adminId, Long employeeId);
+
+  Optional<UserAdmin> findFirstByEmployee(User user);
 }

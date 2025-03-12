@@ -5,7 +5,7 @@ import lombok.Getter;
 
 public record UserAdminRequestDto() {
 
-  public record CreateDto(@NotNull(message = "근로자 식별자 아이디는 필수입니다.") Long userId,
+  public record CreateDto(@NotNull(message = "근로자 로그인 아이디는 필수입니다.") String loginId,
                           boolean isTemporaryWorker) {
   }
 

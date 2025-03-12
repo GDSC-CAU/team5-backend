@@ -3,6 +3,7 @@ package org.gdsccau.team5.safebridge.domain.userAdmin.service;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.gdsccau.team5.safebridge.common.code.error.ReportErrorCode;
 import org.gdsccau.team5.safebridge.common.code.error.UserAdminErrorCode;
 import org.gdsccau.team5.safebridge.common.exception.handler.ExceptionHandler;
 import org.gdsccau.team5.safebridge.domain.user.entity.User;
@@ -44,7 +45,7 @@ public class UserAdminService {
     User admin = userRepository.findByIdAndRole(adminId, Role.ADMIN)
         .orElseThrow(() -> new ExceptionHandler(UserAdminErrorCode.ADMIN_NOT_FOUND));
 
-    User employee = userRepository.findByIdAndRole(createDto.userId(), Role.MEMBER)
+    User employee = userRepository.findByLoginIdAndRole(createDto.loginId(), Role.MEMBER)
         .orElseThrow(() -> new ExceptionHandler(UserAdminErrorCode.ADMIN_NOT_FOUND));
 
     if (userAdminRepository.existsByAdminAndEmployee(admin, employee)) {
@@ -110,5 +111,12 @@ public class UserAdminService {
     if (!deleteEmployeeUserIds.isEmpty()) {
       userAdminRepository.deleteAllByIdInBatch(deleteEmployeeUserIds);
     }
+  }
+
+  public User findAdminByEmployee(final User user) {
+    return userAdminRepository.findFirstByEmployee(user)
+        .map(UserAdmin::getAdmin) // UserAdmin 객체에서 getAdmin()을 안전하게 호출
+        .orElseThrow(() -> new ExceptionHandler(
+            ReportErrorCode.ADMIN_NOT_FOUND));
   }
 }
