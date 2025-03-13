@@ -75,6 +75,7 @@ public class UserAdminService {
             EmployeeDto.builder()
                 .userId(userAdmin.getEmployee().getId())
                 .name(userAdmin.getEmployee().getName())
+                .isTemporaryWorker(userAdmin.isTemporaryWorker())
                 .build()
         ).toList();
 

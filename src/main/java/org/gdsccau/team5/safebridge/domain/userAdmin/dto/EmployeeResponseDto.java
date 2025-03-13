@@ -15,7 +15,8 @@ public record EmployeeResponseDto(
     @Builder
     public record EmployeeDto(
         Long userId,
-        String name
+        String name,
+        Boolean isTemporaryWorker
     ) {
 
 
