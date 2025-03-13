@@ -59,8 +59,8 @@ public class ChatCheckService {
     }
 
     @Transactional(readOnly = true)
-    public List<WorkResponseDto> findAllWorks(final Long userId) {
-        return chatRepository.findAllWorksByUserId(userId);
+    public List<WorkResponseDto> findAllWorks(final List<Long> teamIds) {
+        return chatRepository.findAllWorksByTeamIds(teamIds);
     }
 
     private <T> void validateChatData(final T data) {

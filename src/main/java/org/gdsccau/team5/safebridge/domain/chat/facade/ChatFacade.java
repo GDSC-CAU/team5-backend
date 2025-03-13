@@ -75,6 +75,7 @@ public class ChatFacade {
     }
 
     public List<WorkResponseDto> findAllWorks(final Long userId) {
-        return chatCheckService.findAllWorks(userId);
+        List<Long> teamIds = userTeamCheckService.findAllTeamIdByUserId(userId);
+        return chatCheckService.findAllWorks(teamIds);
     }
 }

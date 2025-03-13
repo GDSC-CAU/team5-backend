@@ -26,6 +26,13 @@ public class UserTeamCheckService {
     }
 
     @Transactional(readOnly = true)
+    public List<Long> findAllTeamIdByUserId(final Long userId) {
+        List<Long> teamIds = userTeamRepository.findAllTeamIdByUserId(userId);
+        this.validateUserTeamData(teamIds);
+        return teamIds;
+    }
+
+    @Transactional(readOnly = true)
     public int countNumOfUsersByTeamId(final Long teamId) {
         Integer numOfUsers = userTeamRepository.countNumOfUsersByTeamId(teamId);
         this.validateUserTeamData(numOfUsers);

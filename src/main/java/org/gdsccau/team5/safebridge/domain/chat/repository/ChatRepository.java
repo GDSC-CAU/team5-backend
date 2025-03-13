@@ -19,7 +19,7 @@ public interface ChatRepository extends JpaRepository<Chat, Long> {
 
     @Query("SELECT new org.gdsccau.team5.safebridge.domain.chat.dto.response.ChatResponseDto$WorkResponseDto(c.id, c.team.id, c.text) "
             + "FROM Chat c "
-            + "WHERE c.user.id = :userId AND c.isTodo is true "
+            + "WHERE c.team.id IN :teamIds AND c.isTodo is true "
             + "ORDER BY c.createdAt DESC")
-    List<WorkResponseDto> findAllWorksByUserId(final Long userId);
+    List<WorkResponseDto> findAllWorksByTeamIds(final List<Long> teamIds);
 }
