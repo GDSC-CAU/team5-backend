@@ -48,7 +48,7 @@ public class UserAuthService {
 
     String token = jwtUtil.getAccessToken(user.getId());
 
-    return new UserResponseDto.LoginDto(user.getId(), user.getRole(), token);
+    return new UserResponseDto.LoginDto(user.getId(),user.getName(), user.getRole(), token);
   }
 
   /**
@@ -73,7 +73,7 @@ public class UserAuthService {
 
     String token = jwtUtil.getAccessToken(user.getId());
 
-    return new UserResponseDto.SignUpDto(user.getId(), user.getRole(), token);
+    return new UserResponseDto.SignUpDto(user.getId(),user.getName(), user.getRole(), token);
   }
 
   /**
@@ -96,7 +96,7 @@ public class UserAuthService {
 
     String token = jwtUtil.getAccessToken(user.getId());
 
-    return new UserResponseDto.SignUpDto(user.getId(), user.getRole(), token);
+    return new UserResponseDto.SignUpDto(user.getId(),user.getName(), user.getRole(), token);
   }
 
   /**
