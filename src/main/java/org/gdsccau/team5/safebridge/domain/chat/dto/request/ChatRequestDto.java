@@ -13,7 +13,7 @@ public class ChatRequestDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ChatMessageRequestDto {
-        boolean isTodo;
+        Boolean isTodo;
         Long userId;
         String name;
         String message;

@@ -42,7 +42,7 @@ public class ChatConverter {
       final Team team) {
     return Chat.builder()
         .text(chatRequestDto.getMessage())
-        .isTodo(chatRequestDto.isTodo())
+        .isTodo(chatRequestDto.getIsTodo())
         .user(user)
         .team(team)
         .build();
