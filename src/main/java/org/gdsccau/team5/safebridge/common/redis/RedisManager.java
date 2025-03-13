@@ -102,6 +102,6 @@ public class RedisManager {
         String zSetKey = this.getZSetKey(userId);
         redisTemplate.delete(inRoomKey);
         redisTemplate.delete(unReadMessageKey);
-        redisTemplate.delete(zSetKey);
+        redisTemplate.opsForZSet().remove(zSetKey, String.valueOf(teamId)); // zSet에서 특정 teamId만 삭제하기
     }
 }
