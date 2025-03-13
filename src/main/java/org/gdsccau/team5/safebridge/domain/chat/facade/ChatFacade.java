@@ -77,11 +77,11 @@ public class ChatFacade {
     }
 
     public List<WorkResponseDto> findAllWorks(final Long userId) {
-//        List<Long> teamIds = userTeamCheckService.findAllTeamIdByUserId(userId);
-        String zSetKey = redisManager.getZSetKey(userId);
-        List<Long> teamIds = redisManager.getZSet(zSetKey).stream()
-                .map(Long::parseLong)
-                .toList();
+        List<Long> teamIds = userTeamCheckService.findAllTeamIdByUserId(userId);
+//        String zSetKey = redisManager.getZSetKey(userId);
+//        List<Long> teamIds = redisManager.getZSet(zSetKey).stream()
+//                .map(Long::parseLong)
+//                .toList();
         return chatCheckService.findAllWorks(teamIds);
     }
 }
