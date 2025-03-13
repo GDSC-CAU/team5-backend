@@ -2,6 +2,7 @@ package org.gdsccau.team5.safebridge.domain.chat.converter;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataDto;
@@ -19,7 +20,7 @@ public class ChatConverter {
       final String name, final Chat chat, final List<TermDataDto> terms) {
     return ChatResponseDto.ChatMessageResponseDto.builder()
         .chatId(chat.getId())
-        .userId(chat.getUser().getId())
+        .userId(Optional.ofNullable(chat.getUser()).map(User::getId).orElse(null))
         .name(name)
         .message(chat.getText())
         .sendTime(chat.getCreatedAt())
