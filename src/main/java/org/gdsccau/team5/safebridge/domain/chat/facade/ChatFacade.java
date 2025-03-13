@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.gdsccau.team5.safebridge.common.term.Language;
 import org.gdsccau.team5.safebridge.common.term.TermManager;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataWithNewChatDto;
@@ -39,6 +40,7 @@ public class ChatFacade {
     private final UserCheckService userCheckService;
     private final UserTeamCheckService userTeamCheckService;
     private final TermManager termManager;
+    private final RedisManager redisManager;
 
     public void chat(final ChatMessageRequestDto chatRequestDto, final Long teamId, final Chat chat) {
         TermDataWithNewChatDto result = termManager.query(chatRequestDto.getMessage());
@@ -75,7 +77,11 @@ public class ChatFacade {
     }
 
     public List<WorkResponseDto> findAllWorks(final Long userId) {
-        List<Long> teamIds = userTeamCheckService.findAllTeamIdByUserId(userId);
+//        List<Long> teamIds = userTeamCheckService.findAllTeamIdByUserId(userId);
+        String zSetKey = redisManager.getZSetKey(userId);
+        List<Long> teamIds = redisManager.getZSet(zSetKey).stream()
+                .map(Long::parseLong)
+                .toList();
         return chatCheckService.findAllWorks(teamIds);
     }
 }
