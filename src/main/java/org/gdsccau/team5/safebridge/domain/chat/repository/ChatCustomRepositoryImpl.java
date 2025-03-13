@@ -92,7 +92,7 @@ public class ChatCustomRepositoryImpl implements ChatCustomRepository {
         QUser user = QUser.user;
         QTranslation translation = QTranslation.translation;
         return queryFactory
-                .select(Projections.constructor(
+                .selectDistinct(Projections.constructor(
                         ChatMessageWithIsReadResponseDto.class,
                         chat.id,
                         user.id,
@@ -104,10 +104,11 @@ public class ChatCustomRepositoryImpl implements ChatCustomRepository {
                 ))
                 .from(chat)
                 .join(user).on(user.id.eq(chat.user.id))
-                .join(translation).on(translation.chat.id.eq(chat.id)).on(translation.language.eq(language))
+                .join(translation).on(translation.chat.id.eq(chat.id))
                 .where(
                         chat.team.id.eq(teamId)
                                 .and(eqCursorId(cursorId))
+                                .and(translation.language.eq(language))
                 )
                 .orderBy(chat.id.desc())
                 .limit(pageable.getPageSize() + 1)
