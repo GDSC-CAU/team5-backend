@@ -9,6 +9,7 @@ import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import org.gdsccau.team5.safebridge.common.term.Language;
 import org.gdsccau.team5.safebridge.domain.chat.dto.response.ChatResponseDto.ChatMessageWithIsReadResponseDto;
@@ -68,6 +69,7 @@ public class ChatCustomRepositoryImpl implements ChatCustomRepository {
                         user.name,
                         chat.text,
                         Expressions.nullExpression(String.class),
+                        ConstantImpl.create(new HashMap<>()),
                         ConstantImpl.create(false),
                         chat.createdAt
                 ))
@@ -99,6 +101,7 @@ public class ChatCustomRepositoryImpl implements ChatCustomRepository {
                         user.name,
                         chat.text,
                         translation.text,
+                        ConstantImpl.create(new HashMap<>()),
                         ConstantImpl.create(false),
                         chat.createdAt
                 ))

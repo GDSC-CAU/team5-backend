@@ -34,11 +34,16 @@ public class ChatResponseDto {
         String name;
         String message;
         String translatedMessage;
+        Map<String, String> translatedTerms;
         boolean isRead;
         LocalDateTime sendTime;
 
-        public void setRead(boolean isRead) {
+        public void setRead(final boolean isRead) {
             this.isRead = isRead;
+        }
+
+        public void setTranslatedTerms(final Map<String, String> translatedTerms) {
+            this.translatedTerms = translatedTerms;
         }
     }
 

@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.gdsccau.team5.safebridge.common.term.Language;
 import org.gdsccau.team5.safebridge.common.term.TermManager;
+import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataWithNewChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.request.ChatRequestDto.ChatMessageRequestDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.response.ChatResponseDto.ChatMessageWithIsReadResponseDto;
@@ -19,6 +20,8 @@ import org.gdsccau.team5.safebridge.domain.chat.service.ChatSendService;
 import org.gdsccau.team5.safebridge.domain.chat.service.ChatService;
 import org.gdsccau.team5.safebridge.domain.team.entity.Team;
 import org.gdsccau.team5.safebridge.domain.team.service.TeamCheckService;
+import org.gdsccau.team5.safebridge.domain.term.service.TermCheckService;
+import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermCheckService;
 import org.gdsccau.team5.safebridge.domain.user.entity.User;
 import org.gdsccau.team5.safebridge.domain.user.enums.Role;
 import org.gdsccau.team5.safebridge.domain.user.service.UserCheckService;
@@ -39,6 +42,8 @@ public class ChatFacade {
     private final TeamCheckService teamCheckService;
     private final UserCheckService userCheckService;
     private final UserTeamCheckService userTeamCheckService;
+    private final TermCheckService termCheckService;
+    private final TranslatedTermCheckService translatedTermCheckService;
     private final TermManager termManager;
     private final RedisManager redisManager;
 
@@ -69,6 +74,18 @@ public class ChatFacade {
         LocalDateTime accessDate = userTeamCheckService.findAccessDateByUserIdAndTeamId(userId, teamId);
         for (ChatMessageWithIsReadResponseDto chatMessage : chatSlice.getContent()) {
             chatMessage.setRead(chatMessage.getSendTime().isBefore(accessDate));
+            // 메시지에 포함된 {현장용어 : 번역용어} 쌍 담아서 보내기
+            Map<String, String> wordZip = new HashMap<>();
+            List<String> words = termManager.query(chatMessage.getMessage()).getTerms().stream()
+                    .map(TermDataDto::getTerm)
+                    .toList();
+            for (String word : words) {
+                Long termId = termCheckService.findTermIdByWord(word);
+                String translatedWord = translatedTermCheckService.findTranslatedTermByLanguageAndTermId(language,
+                        termId);
+                wordZip.put(word, translatedWord);
+            }
+            chatMessage.setTranslatedTerms(wordZip);
         }
         Map<String, Object> response = new HashMap<>();
         response.put("messages", chatSlice.getContent());
@@ -78,10 +95,6 @@ public class ChatFacade {
 
     public List<WorkResponseDto> findAllWorks(final Long userId) {
         List<Long> teamIds = userTeamCheckService.findAllTeamIdByUserId(userId);
-//        String zSetKey = redisManager.getZSetKey(userId);
-//        List<Long> teamIds = redisManager.getZSet(zSetKey).stream()
-//                .map(Long::parseLong)
-//                .toList();
         return chatCheckService.findAllWorks(teamIds);
     }
 }
