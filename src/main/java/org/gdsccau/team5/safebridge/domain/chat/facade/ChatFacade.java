@@ -75,17 +75,21 @@ public class ChatFacade {
         for (ChatMessageWithIsReadResponseDto chatMessage : chatSlice.getContent()) {
             chatMessage.setRead(chatMessage.getSendTime().isBefore(accessDate));
             // 메시지에 포함된 {현장용어 : 번역용어} 쌍 담아서 보내기
-            Map<String, String> wordZip = new HashMap<>();
-            List<String> words = termManager.query(chatMessage.getMessage()).getTerms().stream()
-                    .map(TermDataDto::getTerm)
-                    .toList();
-            for (String word : words) {
-                Long termId = termCheckService.findTermIdByWord(word);
-                String translatedWord = translatedTermCheckService.findTranslatedTermByLanguageAndTermId(language,
-                        termId);
-                wordZip.put(word, translatedWord);
+            if (role.equals("MEMBER")) {
+                Map<String, String> wordZip = new HashMap<>();
+                List<String> words = termManager.query(chatMessage.getMessage()).getTerms().stream()
+                        .map(TermDataDto::getTerm)
+                        .toList();
+                for (String word : words) {
+                    Long termId = termCheckService.findTermIdByWord(word);
+//                    String translatedWord = translatedTermCheckService.findTranslatedTermByLanguageAndTermId(language,
+//                            termId);
+                    String translatedTermKey = redisManager.getTranslatedTermKey(termId, language);
+                    String translatedTerm = redisManager.getTranslatedTerm(translatedTermKey);
+                    wordZip.put(word, translatedTerm);
+                }
+                chatMessage.setTranslatedTerms(wordZip);
             }
-            chatMessage.setTranslatedTerms(wordZip);
         }
         Map<String, Object> response = new HashMap<>();
         response.put("messages", chatSlice.getContent());
