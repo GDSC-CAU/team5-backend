@@ -8,4 +8,4 @@ WORKDIR /app
 COPY ./build/libs/*.jar app.jar
 
 # 컨테이너 실행 시 애플리케이션 실행
-CMD ["java", "-jar", "app.jar"]
+CMD ["java", "-jar", "-Duser.timezone=Asia/Seoul", "app.jar"]
