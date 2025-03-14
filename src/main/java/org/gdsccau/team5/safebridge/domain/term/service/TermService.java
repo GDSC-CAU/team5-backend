@@ -15,9 +15,10 @@ public class TermService {
     private final TermRepository termRepository;
 
     @Transactional
-    public Term createTerm(final String word) {
+    public Term createTerm(final String word, final String meaning) {
         Term term = Term.builder()
                 .word(word)
+                .meaning(meaning)
                 .build();
         return termRepository.save(term);
     }

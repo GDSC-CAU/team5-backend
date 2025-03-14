@@ -25,4 +25,5 @@ public class Term extends BaseEntity {
     private Long id;
 
     private String word;
+    private String meaning;
 }
