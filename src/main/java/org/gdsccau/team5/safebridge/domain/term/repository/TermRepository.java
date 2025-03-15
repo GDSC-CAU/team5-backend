@@ -1,5 +1,6 @@
 package org.gdsccau.team5.safebridge.domain.term.repository;
 
+import io.lettuce.core.dynamic.annotation.Param;
 import java.util.Optional;
 import org.gdsccau.team5.safebridge.domain.term.entity.Term;
 import org.springframework.data.jpa.repository.JpaRepository;
