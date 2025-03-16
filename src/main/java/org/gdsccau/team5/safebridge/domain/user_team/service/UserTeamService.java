@@ -21,7 +21,7 @@ public class UserTeamService {
     @Transactional
     public void createUserTeam(final User user, final Team team) {
         UserTeam userTeam = UserTeam.builder()
-                .inRoom(false)
+                .inRoom(0)
                 .accessDate(LocalDateTime.now())
                 .unReadMessage(0)
                 .user(user)
@@ -34,5 +34,17 @@ public class UserTeamService {
     public void updateAccessDate(final Long userId, final Long teamId) {
         UserTeam userTeam = userTeamCheckService.findUserTeamByUserIdAndTeamId(userId, teamId);
         userTeam.updateAccessDate();
+    }
+
+    @Transactional
+    public void updateInRoomWhenJoin(final Long userId, final Long teamId) {
+        UserTeam userTeam = userTeamCheckService.findUserTeamByUserIdAndTeamId(userId, teamId);
+        userTeam.updateInRoomWhenJoin();
+    }
+
+    @Transactional
+    public void updateInRoomWhenLeave(final Long userId, final Long teamId) {
+        UserTeam userTeam = userTeamCheckService.findUserTeamByUserIdAndTeamId(userId, teamId);
+        userTeam.updateInRoomWhenLeave();
     }
 }

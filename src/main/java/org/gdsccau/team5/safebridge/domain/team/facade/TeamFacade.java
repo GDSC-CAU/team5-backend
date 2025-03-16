@@ -48,17 +48,19 @@ public class TeamFacade {
     }
 
     @Transactional
-    public TeamDataDto joinTeam(final Long teamId, final Long userId) {
+    public TeamDataDto joinTeam(final Long userId, final Long teamId) {
         String teamName = teamCheckService.findNameByTeamId(teamId);
         int numberOfUsers = userTeamCheckService.countNumOfUsersByTeamId(teamId);
         redisManager.updateRedisWhenJoin(userId, teamId);
+        userTeamService.updateInRoomWhenJoin(userId, teamId);
         return teamService.joinTeam(teamName, numberOfUsers);
     }
 
     @Transactional
-    public void leaveTeam(final Long teamId, final Long userId) {
+    public void leaveTeam(final Long userId, final Long teamId) {
         userTeamService.updateAccessDate(userId, teamId);
         redisManager.updateRedisWhenLeave(userId, teamId);
+        userTeamService.updateInRoomWhenLeave(userId, teamId);
         teamService.leaveTeam(teamId, userId);
     }
 }

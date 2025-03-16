@@ -92,13 +92,13 @@ public class ChatSendService {
         String unReadMessageKey = redisManager.getUnReadMessageKey(userId, teamId);
         String zSetKey = redisManager.getZSetKey(userId);
 
-        int inRoom = redisManager.getInRoom(inRoomKey);
+        int inRoom = redisManager.getInRoomOrDefault(inRoomKey,
+                () -> userTeamCheckService.findInRoomByUserIdAndTeamId(userId, teamId));
         if (inRoom == 0) {
             redisManager.updateUnReadMessage(unReadMessageKey);
         }
         redisManager.updateZSet(zSetKey, teamId, chat);
 
-        // TODO
         return createTeamListDto(
                 teamId, chat.getText(), chat.getCreatedAt(), redisManager.getUnReadMessage(unReadMessageKey)
         );

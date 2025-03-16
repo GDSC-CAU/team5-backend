@@ -3,6 +3,8 @@ package org.gdsccau.team5.safebridge.common.redis;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.term.Language;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class RedisManager {
 
+    private final static Integer TTL = 9;
     private final RedisTemplate<String, String> redisTemplate;
 
     public String getInRoomKey(final Long userId, final Long teamId) {
@@ -33,9 +36,28 @@ public class RedisManager {
         return "termId:" + termId + ":language:" + language.getCode() + ":translated";
     }
 
+    public Boolean isInRoomExists(final String inRoomKey) {
+        return redisTemplate.hasKey(inRoomKey);
+    }
+
     public int getInRoom(final String inRoomKey) {
         String inRoomValue = redisTemplate.opsForValue().get(inRoomKey);
         return inRoomValue != null ? Integer.parseInt(inRoomValue) : 0;
+    }
+
+    public int getInRoomOrDefault(final String inRoomKey, final Supplier<Integer> dbLookUp) {
+        if (isInRoomExists(inRoomKey)) {
+            int inRoom = getInRoom(inRoomKey);
+            updateInRoom(inRoomKey, inRoom);
+            return inRoom;
+        }
+        int inRoom = dbLookUp.get();
+        updateInRoom(inRoomKey, inRoom);
+        return inRoom;
+    }
+
+    public void updateInRoom(final String inRoomKey, final int inRoom) {
+        redisTemplate.opsForValue().set(inRoomKey, String.valueOf(inRoom), TTL, TimeUnit.HOURS);
     }
 
     public int getUnReadMessage(final String unReadMessageKey) {
@@ -77,23 +99,24 @@ public class RedisManager {
                 .atZone(ZoneId.of("Asia/Seoul"))
                 .toInstant()
                 .toEpochMilli();
-        redisTemplate.opsForValue().set(inRoomKey, "0");
-        redisTemplate.opsForValue().set(unReadMessageKey, "0");
+        redisTemplate.opsForValue().set(inRoomKey, "0", TTL, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(unReadMessageKey, "0", TTL, TimeUnit.HOURS);
         redisTemplate.opsForZSet().add(zSetKey, String.valueOf(teamId), score);
+        redisTemplate.expire(zSetKey, TTL, TimeUnit.HOURS);
     }
 
     public void updateRedisWhenJoin(final Long userId, final Long teamId) {
         String inRoomKey = this.getInRoomKey(userId, teamId);
         String unReadMessageKey = this.getUnReadMessageKey(userId, teamId);
-        redisTemplate.opsForValue().set(inRoomKey, "1");
-        redisTemplate.opsForValue().set(unReadMessageKey, "0");
+        redisTemplate.opsForValue().set(inRoomKey, "1", TTL, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(unReadMessageKey, "0", TTL, TimeUnit.HOURS);
     }
 
     public void updateRedisWhenLeave(final Long userId, final Long teamId) {
         String inRoomKey = this.getInRoomKey(userId, teamId);
         String unReadMessageKey = this.getUnReadMessageKey(userId, teamId);
-        redisTemplate.opsForValue().set(inRoomKey, "0");
-        redisTemplate.opsForValue().set(unReadMessageKey, "0");
+        redisTemplate.opsForValue().set(inRoomKey, "0", TTL, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(unReadMessageKey, "0", TTL, TimeUnit.HOURS);
     }
 
     public void updateRedisWhenDelete(final Long userId, final Long teamId) {
@@ -102,6 +125,6 @@ public class RedisManager {
         String zSetKey = this.getZSetKey(userId);
         redisTemplate.delete(inRoomKey);
         redisTemplate.delete(unReadMessageKey);
-        redisTemplate.opsForZSet().remove(zSetKey, String.valueOf(teamId)); // zSet에서 특정 teamId만 삭제하기
+        redisTemplate.opsForZSet().remove(zSetKey, String.valueOf(teamId));
     }
 }

@@ -11,13 +11,13 @@ import org.springframework.data.repository.query.Param;
 public interface UserTeamRepository extends JpaRepository<UserTeam, Long> {
 
     @Query("SELECT ut.user.id FROM UserTeam ut WHERE ut.team.id = :teamId")
-    List<Long> findAllUserIdByTeamId(final Long teamId);
+    List<Long> findAllUserIdByTeamId(@Param("teamId") final Long teamId);
 
     @Query("SELECT count(*) FROM UserTeam ut WHERE ut.team.id = :teamId")
-    Integer countNumOfUsersByTeamId(final Long teamId);
+    Integer countNumOfUsersByTeamId(@Param("teamId") final Long teamId);
 
     @Query("SELECT ut.team.id FROM UserTeam ut WHERE ut.user.id = :userId")
-    List<Long> findAllTeamIdByUserId(final Long userId);
+    List<Long> findAllTeamIdByUserId(@Param("teamId") final Long userId);
 
     @Query("SELECT ut FROM UserTeam ut WHERE ut.user.id = :userId AND ut.team.id = :teamId")
     Optional<UserTeam> findUserTeamByUserIdAndTeamId(@Param("userId") final Long userId,
@@ -27,4 +27,7 @@ public interface UserTeamRepository extends JpaRepository<UserTeam, Long> {
     Optional<LocalDateTime> findAccessDateByUserIdAndTeamId(@Param("userId") final Long userId,
                                                             @Param("teamId") final Long teamId);
 
+    @Query("SELECT ut.inRoom FROM UserTeam ut WHERE ut.user.id = :userId AND ut.team.id = :teamId")
+    Optional<Integer> findInRoomByUserIdAndTeamId(@Param("userId") final Long userId,
+                                                  @Param("teamId") final Long teamId);
 }

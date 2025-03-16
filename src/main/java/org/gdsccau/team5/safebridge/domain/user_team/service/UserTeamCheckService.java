@@ -53,6 +53,13 @@ public class UserTeamCheckService {
         return accessDate;
     }
 
+    @Transactional(readOnly = true)
+    public Integer findInRoomByUserIdAndTeamId(final Long userId, final Long teamId) {
+        Integer inRoom = userTeamRepository.findInRoomByUserIdAndTeamId(userId, teamId).orElse(null);
+        this.validateUserTeamData(inRoom);
+        return inRoom;
+    }
+
     private <T> void validateUserTeamData(final T data) {
         if (data == null) {
             throw new ExceptionHandler(UserTeamErrorCode.USER_TEAM_NOT_FOUND);
