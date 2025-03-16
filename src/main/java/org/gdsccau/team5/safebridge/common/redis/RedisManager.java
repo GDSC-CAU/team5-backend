@@ -36,28 +36,11 @@ public class RedisManager {
         return "termId:" + termId + ":language:" + language.getCode() + ":translated";
     }
 
-    public Boolean isInRoomExists(final String inRoomKey) {
-        return redisTemplate.hasKey(inRoomKey);
-    }
-
-    public int getInRoom(final String inRoomKey) {
-        String inRoomValue = redisTemplate.opsForValue().get(inRoomKey);
-        return inRoomValue != null ? Integer.parseInt(inRoomValue) : 0;
-    }
-
     public int getInRoomOrDefault(final String inRoomKey, final Supplier<Integer> dbLookUp) {
         if (isInRoomExists(inRoomKey)) {
-            int inRoom = getInRoom(inRoomKey);
-            updateInRoom(inRoomKey, inRoom);
-            return inRoom;
+            return updateInRoomWithPER(inRoomKey, dbLookUp);
         }
-        int inRoom = dbLookUp.get();
-        updateInRoom(inRoomKey, inRoom);
-        return inRoom;
-    }
-
-    public void updateInRoom(final String inRoomKey, final int inRoom) {
-        redisTemplate.opsForValue().set(inRoomKey, String.valueOf(inRoom), TTL, TimeUnit.HOURS);
+        return updateInRoomWithoutPER(inRoomKey, dbLookUp);
     }
 
     public int getUnReadMessage(final String unReadMessageKey) {
@@ -91,40 +74,115 @@ public class RedisManager {
     }
 
     public void initRedis(final Long userId, final Long teamId) {
-        String inRoomKey = this.getInRoomKey(userId, teamId);
-        String unReadMessageKey = this.getUnReadMessageKey(userId, teamId);
-        String zSetKey = this.getZSetKey(userId);
+        String inRoomKey = getInRoomKey(userId, teamId);
+        String unReadMessageKey = getUnReadMessageKey(userId, teamId);
+        String zSetKey = getZSetKey(userId);
 
-        long score = LocalDateTime.now()
-                .atZone(ZoneId.of("Asia/Seoul"))
-                .toInstant()
-                .toEpochMilli();
-        redisTemplate.opsForValue().set(inRoomKey, "0", TTL, TimeUnit.HOURS);
-        redisTemplate.opsForValue().set(unReadMessageKey, "0", TTL, TimeUnit.HOURS);
-        redisTemplate.opsForZSet().add(zSetKey, String.valueOf(teamId), score);
-        redisTemplate.expire(zSetKey, TTL, TimeUnit.HOURS);
+        initInRoom(inRoomKey);
+        initUnReadMessage(unReadMessageKey);
+        initZSet(zSetKey, teamId);
     }
 
-    public void updateRedisWhenJoin(final Long userId, final Long teamId) {
-        String inRoomKey = this.getInRoomKey(userId, teamId);
-        String unReadMessageKey = this.getUnReadMessageKey(userId, teamId);
-        redisTemplate.opsForValue().set(inRoomKey, "1", TTL, TimeUnit.HOURS);
+    public void updateRedisWhenJoin(final Long userId, final Long teamId, final Supplier<Integer> dbLookUp) {
+        String inRoomKey = getInRoomKey(userId, teamId);
+        String unReadMessageKey = getUnReadMessageKey(userId, teamId);
+        updateInRoomWithoutPER(inRoomKey, dbLookUp);
         redisTemplate.opsForValue().set(unReadMessageKey, "0", TTL, TimeUnit.HOURS);
     }
 
-    public void updateRedisWhenLeave(final Long userId, final Long teamId) {
-        String inRoomKey = this.getInRoomKey(userId, teamId);
-        String unReadMessageKey = this.getUnReadMessageKey(userId, teamId);
-        redisTemplate.opsForValue().set(inRoomKey, "0", TTL, TimeUnit.HOURS);
+    public void updateRedisWhenLeave(final Long userId, final Long teamId, final Supplier<Integer> dbLookUp) {
+        String inRoomKey = getInRoomKey(userId, teamId);
+        String unReadMessageKey = getUnReadMessageKey(userId, teamId);
+        updateInRoomWithoutPER(inRoomKey, dbLookUp);
         redisTemplate.opsForValue().set(unReadMessageKey, "0", TTL, TimeUnit.HOURS);
     }
 
     public void updateRedisWhenDelete(final Long userId, final Long teamId) {
-        String inRoomKey = this.getInRoomKey(userId, teamId);
-        String unReadMessageKey = this.getUnReadMessageKey(userId, teamId);
-        String zSetKey = this.getZSetKey(userId);
+        String inRoomKey = getInRoomKey(userId, teamId);
+        String unReadMessageKey = getUnReadMessageKey(userId, teamId);
+        String zSetKey = getZSetKey(userId);
         redisTemplate.delete(inRoomKey);
+        redisTemplate.delete(inRoomKey + ":delta");
+        redisTemplate.delete(inRoomKey + ":expiry");
         redisTemplate.delete(unReadMessageKey);
         redisTemplate.opsForZSet().remove(zSetKey, String.valueOf(teamId));
+    }
+
+    private Boolean isInRoomExists(final String inRoomKey) {
+        return redisTemplate.hasKey(inRoomKey);
+    }
+
+    private int getInRoom(final String inRoomKey) {
+        String inRoomValue = redisTemplate.opsForValue().get(inRoomKey);
+        return inRoomValue != null ? Integer.parseInt(inRoomValue) : 0;
+    }
+
+    private long getInRoomDelta(final String inRoomKey) {
+        String inRoomDeltaValue = redisTemplate.opsForValue().get(inRoomKey + ":delta");
+        return inRoomDeltaValue != null ? Long.parseLong(inRoomDeltaValue) : 0;
+    }
+
+    private long getInRoomExpiry(final String inRoomKey) {
+        String inRoomExpiry = redisTemplate.opsForValue().get(inRoomKey + ":expiry");
+        return inRoomExpiry != null ? Long.parseLong(inRoomExpiry) : 0;
+    }
+
+    private long getCurrentTime() {
+        return LocalDateTime.now()
+                .atZone(ZoneId.of("Asia/Seoul"))
+                .toInstant()
+                .toEpochMilli();
+    }
+
+    private void initInRoom(final String inRoomKey) {
+        long expiryTimestamp = getCurrentTime() + TimeUnit.HOURS.toMillis(TTL);
+        redisTemplate.opsForValue().set(inRoomKey, "0", TTL, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(inRoomKey + ":delta", "0", TTL, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(inRoomKey + ":expiry", String.valueOf(expiryTimestamp), TTL, TimeUnit.HOURS);
+    }
+
+    private void initUnReadMessage(final String unReadMessageKey) {
+        redisTemplate.opsForValue().set(unReadMessageKey, "0", TTL, TimeUnit.HOURS);
+    }
+
+    private void initZSet(final String zSetKey, final Long teamId) {
+        long score = LocalDateTime.now()
+                .atZone(ZoneId.of("Asia/Seoul"))
+                .toInstant()
+                .toEpochMilli();
+        redisTemplate.opsForZSet().add(zSetKey, String.valueOf(teamId), score);
+        redisTemplate.expire(zSetKey, TTL, TimeUnit.HOURS);
+    }
+
+    private int updateInRoomWithoutPER(final String inRoomKey, final Supplier<Integer> dbLookUp) {
+        long nowTime = getCurrentTime();
+        int inRoom = dbLookUp.get();
+        long delta = getCurrentTime() - nowTime;
+        saveInRoom(inRoomKey, inRoom, delta);
+        return inRoom;
+    }
+
+    // PER Algorithm
+    private int updateInRoomWithPER(final String inRoomKey, final Supplier<Integer> dbLookUp) {
+        long delta = getInRoomDelta(inRoomKey);
+        long expiry = getInRoomExpiry(inRoomKey);
+        double beta = 1.0;
+
+        long perGap = (long) (delta * beta * Math.log10(Math.random()));
+        if (getCurrentTime() - perGap >= expiry) {
+            long nowTime = getCurrentTime();
+            int newInRoom = dbLookUp.get();
+            long newDelta = getCurrentTime() - nowTime;
+            saveInRoom(inRoomKey, newInRoom, newDelta);
+            return newInRoom;
+        }
+        return getInRoom(inRoomKey);
+    }
+
+    private void saveInRoom(final String inRoomKey, final int inRoom, final long delta) {
+        long expiryTimestamp = getCurrentTime() + TimeUnit.HOURS.toMillis(TTL);
+        redisTemplate.opsForValue().set(inRoomKey, String.valueOf(inRoom), TTL, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(inRoomKey + ":delta", String.valueOf(delta), TTL, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(inRoomKey + ":expiry", String.valueOf(expiryTimestamp), TTL, TimeUnit.HOURS);
     }
 }
