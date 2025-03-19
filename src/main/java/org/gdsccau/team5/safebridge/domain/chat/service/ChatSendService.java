@@ -96,11 +96,13 @@ public class ChatSendService {
                 () -> userTeamCheckService.findInRoomByUserIdAndTeamId(userId, teamId));
         if (inRoom == 0) {
             redisManager.updateUnReadMessage(unReadMessageKey);
+            redisManager.updateUpdatedSet(userId, teamId);
         }
         redisManager.updateZSet(zSetKey, teamId, chat);
 
         return createTeamListDto(
-                teamId, chat.getText(), chat.getCreatedAt(), redisManager.getUnReadMessage(unReadMessageKey)
+                teamId, chat.getText(), chat.getCreatedAt(), redisManager.getUnReadMessage(unReadMessageKey,
+                        () -> userTeamCheckService.findUnReadMessageByUserIdAndTeamId(userId, teamId))
         );
     }
 

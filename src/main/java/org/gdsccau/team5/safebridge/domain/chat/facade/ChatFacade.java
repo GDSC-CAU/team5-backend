@@ -83,11 +83,11 @@ public class ChatFacade {
                 for (String word : words) {
                     Long termId = termCheckService.findTermIdByWord(word);
                     // 밑에 쿼리가 왜 여러 레코드가 리턴되는거지?
-//                    String translatedWord = translatedTermCheckService.findTranslatedTermByLanguageAndTermId(language,
-//                            termId);
-                    String translatedTermKey = redisManager.getTranslatedTermKey(termId, language);
-                    String translatedTerm = redisManager.getTranslatedTerm(translatedTermKey);
-                    wordZip.put(word, translatedTerm);
+                    String translatedWord = translatedTermCheckService.findTranslatedTermByLanguageAndTermId(language,
+                            termId);
+//                    String translatedTermKey = redisManager.getTranslatedTermKey(termId, language);
+//                    String translatedTerm = redisManager.getTranslatedTerm(translatedTermKey);
+                    wordZip.put(word, translatedWord);
                 }
                 chatMessage.setTranslatedTerms(wordZip);
             }

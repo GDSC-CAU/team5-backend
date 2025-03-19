@@ -1,5 +1,6 @@
 package org.gdsccau.team5.safebridge.domain.team.service;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.code.error.TeamErrorCode;
@@ -32,6 +33,12 @@ public class TeamCheckService {
 
     private <T> void validateTeamData(final T data) {
         if (data == null) {
+            throw new ExceptionHandler(TeamErrorCode.TEAM_NOT_FOUND);
+        }
+    }
+
+    private <T> void validateTeamData(final List<T> data) {
+        if (data.isEmpty()) {
             throw new ExceptionHandler(TeamErrorCode.TEAM_NOT_FOUND);
         }
     }

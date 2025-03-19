@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.code.error.UserTeamErrorCode;
 import org.gdsccau.team5.safebridge.common.exception.handler.ExceptionHandler;
+import org.gdsccau.team5.safebridge.domain.team.dto.TeamDto.TeamOrderDto;
 import org.gdsccau.team5.safebridge.domain.user_team.entity.UserTeam;
 import org.gdsccau.team5.safebridge.domain.user_team.repository.UserTeamRepository;
 import org.springframework.stereotype.Service;
@@ -58,6 +59,20 @@ public class UserTeamCheckService {
         Integer inRoom = userTeamRepository.findInRoomByUserIdAndTeamId(userId, teamId).orElse(null);
         this.validateUserTeamData(inRoom);
         return inRoom;
+    }
+
+    @Transactional(readOnly = true)
+    public Integer findUnReadMessageByUserIdAndTeamId(final Long userId, final Long teamId) {
+        Integer unReadMessage = userTeamRepository.findUnReadMessageByUserIdAndTeamId(userId, teamId).orElse(null);
+        this.validateUserTeamData(unReadMessage);
+        return unReadMessage;
+    }
+
+    @Transactional(readOnly = true)
+    public List<TeamOrderDto> findAllTeamOrderByLastChatTime() {
+        List<TeamOrderDto> dtos = userTeamRepository.findAllTeamOrderByLastChatTime();
+        this.validateUserTeamData(dtos);
+        return dtos;
     }
 
     private <T> void validateUserTeamData(final T data) {
