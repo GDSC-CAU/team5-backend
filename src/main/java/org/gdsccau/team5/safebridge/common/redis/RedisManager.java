@@ -3,8 +3,6 @@ package org.gdsccau.team5.safebridge.common.redis;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -132,6 +130,20 @@ public class RedisManager {
         initInRoom(inRoomKey);
         initUnReadMessage(unReadMessageKey);
         initZSet(zSetKey, teamId);
+    }
+
+    public void updateRedisWhenJoin(final Long userId, final Long teamId) {
+        String inRoomKey = this.getInRoomKey(userId, teamId);
+        String unReadMessageKey = this.getUnReadMessageKey(userId, teamId);
+        redisTemplate.opsForValue().set(inRoomKey, "1");
+        redisTemplate.opsForValue().set(unReadMessageKey, "0");
+    }
+
+    public void updateRedisWhenLeave(final Long userId, final Long teamId) {
+        String inRoomKey = this.getInRoomKey(userId, teamId);
+        String unReadMessageKey = this.getUnReadMessageKey(userId, teamId);
+        redisTemplate.opsForValue().set(inRoomKey, "0");
+        redisTemplate.opsForValue().set(unReadMessageKey, "0");
     }
 
     public void updateRedisWhenDelete(final Long userId, final Long teamId) {

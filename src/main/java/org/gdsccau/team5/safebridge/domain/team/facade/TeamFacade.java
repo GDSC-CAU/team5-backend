@@ -29,8 +29,6 @@ public class TeamFacade {
     private final UserTeamCheckService userTeamCheckService;
     private final RedisManager redisManager;
 
-    private final ApplicationEventPublisher eventPublisher;
-
     @Transactional
     public void createTeam(final TeamCreateRequestDto requestDto) {
         List<User> users = requestDto.getUserIds().stream()
@@ -57,9 +55,7 @@ public class TeamFacade {
         String teamName = teamCheckService.findNameByTeamId(teamId);
         int numberOfUsers = userTeamCheckService.countNumOfUsersByTeamId(teamId);
         userTeamService.updateInRoomWhenJoin(userId, teamId);
-        eventPublisher.publishEvent(
-                new JoinTeamEvent(userId, teamId,
-                        () -> userTeamCheckService.findInRoomByUserIdAndTeamId(userId, teamId)));
+        redisManager.updateRedisWhenJoin(userId, teamId);
         return teamService.joinTeam(teamName, numberOfUsers);
     }
 
@@ -67,9 +63,7 @@ public class TeamFacade {
     public void leaveTeam(final Long userId, final Long teamId) {
         userTeamService.updateAccessDate(userId, teamId);
         userTeamService.updateInRoomWhenLeave(userId, teamId);
-        eventPublisher.publishEvent(
-                new LeaveTeamEvent(userId, teamId,
-                        () -> userTeamCheckService.findInRoomByUserIdAndTeamId(userId, teamId)));
+        redisManager.updateRedisWhenLeave(userId, teamId);
         teamService.leaveTeam(teamId, userId);
     }
 }
