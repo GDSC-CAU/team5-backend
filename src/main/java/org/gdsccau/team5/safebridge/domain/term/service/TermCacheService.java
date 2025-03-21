@@ -17,27 +17,37 @@ public class TermCacheService {
 
     private final CacheManager cacheManager;
 
-    @CachePut(value = "findNumber", key = "#termId + #language.toString()")
-    public Integer updateFindNumber(final Long termId, final Language language) {
-        Integer currentFindNumber = Objects.requireNonNull(cacheManager.getCache("findNumber")).get(termId + language.toString(), Integer.class);
+    @CachePut(value = "term", key = "#word + ':' + #language.toString()")
+    public String updateTerm(final String word, final Language language, final String translatedWord) {
+        return word + ":" + translatedWord;
+    }
+
+    @CachePut(value = "findNumber", key = "#word + ':' + #language.toString()")
+    public Integer updateFindNumber(final String word, final Language language) {
+        Integer currentFindNumber = Objects.requireNonNull(cacheManager.getCache("findNumber")).get(word + ':' + language.toString(), Integer.class);
         return currentFindNumber == null ? 1 : currentFindNumber + 1;
     }
 
-    @CachePut(value = "findTime", key = "#termId + #language.toString()")
-    public Long updateFindTime(final Long termId, final Language language) {
+    @CachePut(value = "findTime", key = "#word + ':' + #language.toString()")
+    public Long updateFindTime(final String word, final Language language) {
         return LocalDateTime.now()
                 .atZone(ZoneId.of("Asia/Seoul"))
                 .toInstant()
                 .toEpochMilli();
     }
 
-    @CacheEvict(value = "findNumber", key = "#termId + #language.toString()")
-    public void deleteFindNumber(final Long termId, final Language language) {
+    @CacheEvict(value = "term", key = "#word + ':' + #language.toString()")
+    public void deleteTerm(final String word, final Language language) {
 
     }
 
-    @CacheEvict(value = "findTime", key = "#termId + #language.toString()")
-    public void deleteFindTime(final Long termId, final Language language) {
+    @CacheEvict(value = "findNumber", key = "#word + ':' + #language.toString()")
+    public void deleteFindNumber(final String word, final Language language) {
+
+    }
+
+    @CacheEvict(value = "findTime", key = "#word + ':' + #language.toString()")
+    public void deleteFindTime(final String word, final Language language) {
 
     }
 }

@@ -55,9 +55,7 @@ public class ChatSendService {
 
     public void sendTranslatedMessage(final TermDataWithNewChatDto result, final Language language, final Chat chat,
                                       final Long teamId, final Long userId) {
-        // TODO 이미 번역되었다면 Local Cache -> DB 조회
-        CompletableFuture<TranslatedDataDto> translatedText = termManager.translate(
-                result.getNewChat(), result.getTerms(), language);
+        CompletableFuture<TranslatedDataDto> translatedText = termManager.translate(result.getNewChat(), result.getTerms(), language);
         translatedText.thenAccept(dto -> {
             translationService.createTranslation(dto.getTranslatedText(), language, chat.getId());
             messagingTemplate.convertAndSend(TRANSLATE_SUB_URL + teamId + "/" + userId,

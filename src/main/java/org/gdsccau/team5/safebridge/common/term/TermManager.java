@@ -29,6 +29,8 @@ import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataWithNewChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TranslatedDataDto;
 import org.gdsccau.team5.safebridge.domain.term.entity.Term;
+import org.gdsccau.team5.safebridge.domain.term.service.TermCacheCheckService;
+import org.gdsccau.team5.safebridge.domain.term.service.TermCacheService;
 import org.gdsccau.team5.safebridge.domain.term.service.TermCheckService;
 import org.gdsccau.team5.safebridge.domain.term.service.TermService;
 import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermCheckService;
@@ -66,8 +68,9 @@ public class TermManager {
 
     private static final String SOURCE_LANGUAGE_CODE = "ko";
 
-    private final RedisManager redisManager;
     private final TermCheckService termCheckService;
+    private final TermCacheService termCacheService;
+    private final TermCacheCheckService termCacheCheckService;
     private final TermService termService;
     private final TranslatedTermCheckService translatedTermCheckService;
     private final TranslatedTermService translatedTermService;
@@ -75,7 +78,8 @@ public class TermManager {
     private final Trie trie;
     private final Map<String, String> termsWithMeaning;
 
-    public TermManager(final RedisManager redisManager, final TermCheckService termCheckService,
+    public TermManager(final TermCheckService termCheckService,
+                       final TermCacheService termCacheService, final TermCacheCheckService termCacheCheckService,
                        final TermService termService, final TranslatedTermCheckService translatedTermCheckService,
                        final TranslatedTermService translatedTermService) {
         Set<String> terms = TermLoader.loadTermsOnly();
@@ -85,8 +89,9 @@ public class TermManager {
         }
         this.trie = builder.build();
         this.termsWithMeaning = TermLoader.loadTermsWithMeaning();
-        this.redisManager = redisManager;
         this.termCheckService = termCheckService;
+        this.termCacheService = termCacheService;
+        this.termCacheCheckService = termCacheCheckService;
         this.termService = termService;
         this.translatedTermCheckService = translatedTermCheckService;
         this.translatedTermService = translatedTermService;
@@ -144,17 +149,24 @@ public class TermManager {
         // TODO 이미 현장 용어에 대해 번역을 했는지 확인하고 안 했으면 Local Cache -> DB를 순서대로 조회해서 가져온다.
         Map<String, String> result = new HashMap<>();
         termDataDtos.forEach(termDataDto -> {
-            // TODO Local Cache 조회
-
-            Term term = termCheckService.findTermByWord(termDataDto.getTerm());
-            if (term == null) {
-                Translation translation = translate.translate(termDataDto.getMeaning(),
-                        Translate.TranslateOption.sourceLanguage(SOURCE_LANGUAGE_CODE),
-                        Translate.TranslateOption.targetLanguage(language.getCode()));
-                String translatedTerm = translation.getTranslatedText().replaceAll("&#39;", "'");
-                result.put(termDataDto.getTerm(), translatedTerm);
+            String wordAndTWord = termCacheCheckService.findTerm(termDataDto.getTerm(), language);
+            String translatedTerm = null;
+            if (wordAndTWord != null) {
+                translatedTerm = wordAndTWord.split(":")[1];
+            } else {
+                Term term = termCheckService.findTermByWord(termDataDto.getTerm());
+                if (term != null) {
+                    translatedTerm = translatedTermCheckService.findTranslatedTermByLanguageAndTermId(language, term.getId());
+                } else {
+                    Translation translation = translate.translate(termDataDto.getMeaning(),
+                            Translate.TranslateOption.sourceLanguage(SOURCE_LANGUAGE_CODE),
+                            Translate.TranslateOption.targetLanguage(language.getCode()));
+                    translatedTerm = translation.getTranslatedText().replaceAll("&#39;", "'");
+                    term = termService.createTerm(termDataDto.getTerm(), termDataDto.getMeaning());
+                    translatedTermService.createTranslatedTerm(term, language, translatedTerm);
+                }
             }
-
+            result.put(termDataDto.getTerm(), translatedTerm);
         });
         return result;
     }
