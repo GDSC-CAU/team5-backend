@@ -1,9 +1,8 @@
 package org.gdsccau.team5.safebridge.domain.chat.facade;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.redis.RedisManager;
@@ -20,6 +19,7 @@ import org.gdsccau.team5.safebridge.domain.chat.service.ChatSendService;
 import org.gdsccau.team5.safebridge.domain.chat.service.ChatService;
 import org.gdsccau.team5.safebridge.domain.team.entity.Team;
 import org.gdsccau.team5.safebridge.domain.team.service.TeamCheckService;
+import org.gdsccau.team5.safebridge.domain.term.service.TermCacheService;
 import org.gdsccau.team5.safebridge.domain.term.service.TermCheckService;
 import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermCheckService;
 import org.gdsccau.team5.safebridge.domain.user.entity.User;
@@ -43,6 +43,7 @@ public class ChatFacade {
     private final UserCheckService userCheckService;
     private final UserTeamCheckService userTeamCheckService;
     private final TermCheckService termCheckService;
+    private final TermCacheService termCacheService;
     private final TranslatedTermCheckService translatedTermCheckService;
     private final TermManager termManager;
     private final RedisManager redisManager;
@@ -51,11 +52,22 @@ public class ChatFacade {
         TermDataWithNewChatDto result = termManager.query(chatRequestDto.getMessage());
         chatSendService.sendChatMessage(result, chatRequestDto.getName(), chat, teamId);
         List<Long> userIds = userTeamCheckService.findAllUserIdByTeamId(teamId);
+        Set<Language> languageSet = new HashSet<>();
         for (Long userId : userIds) {
             Language language = userCheckService.findLanguageByUserId(userId);
+            languageSet.add(language);
             chatSendService.sendTranslatedMessage(result, language, chat, teamId, userId);
             chatSendService.sendTeamData(chat, teamId, userId);
         }
+
+        // TODO Local Cache UPDATE
+        result.getTerms().forEach(dto -> {
+            languageSet.forEach(language -> {
+                String word = dto.getTerm();
+                termCacheService.updateFindNumber(word, language);
+                termCacheService.updateFindTime(word, language, chat.getCreatedAt());
+            });
+        });
     }
 
     @Transactional

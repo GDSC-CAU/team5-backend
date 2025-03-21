@@ -39,10 +39,6 @@ public class RedisManager {
         return "userId:" + userId + ":team";
     }
 
-    public String getTranslatedTermKey(final Long termId, final Language language) {
-        return "termId:" + termId + ":language:" + language.getCode() + ":translated";
-    }
-
     public int getInRoomOrDefault(final String inRoomKey, final Supplier<Integer> dbLookUp) {
         if (isInRoomExists(inRoomKey)) {
             return getInRoom(inRoomKey);
@@ -112,14 +108,6 @@ public class RedisManager {
 
     public void clearZSet(final String zSetKey) {
         redisTemplate.opsForZSet().removeRange(zSetKey, 0, -1);
-    }
-
-    public String getTranslatedTerm(final String translatedTermKey) {
-        return redisTemplate.opsForValue().get(translatedTermKey);
-    }
-
-    public void updateTranslatedTerm(final String translatedTermKey, final String translatedTerm) {
-        redisTemplate.opsForValue().set(translatedTermKey, translatedTerm);
     }
 
     public void initRedis(final Long userId, final Long teamId) {

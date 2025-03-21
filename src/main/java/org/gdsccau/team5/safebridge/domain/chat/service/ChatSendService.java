@@ -37,10 +37,6 @@ public class ChatSendService {
     private static final String TRANSLATE_SUB_URL = "/sub/translate/";
 
     private final TranslationService translationService;
-    private final TranslationCheckService translationCheckService;
-    private final TranslatedTermCheckService translatedTermCheckService;
-    private final TranslatedTermService translatedTermService;
-    private final TermCheckService termCheckService;
     private final TeamCheckService teamCheckService;
     private final UserTeamCheckService userTeamCheckService;
     private final SimpMessagingTemplate messagingTemplate;
@@ -63,7 +59,6 @@ public class ChatSendService {
                             chat.getId()));
         });
         // TODO 비동기 처리에 대한 예외처리
-        // TODO Local Cache에 최근 호출 시각 + 누적 호출 횟수를 저장
     }
 
     public void sendTeamData(final Chat chat, final Long teamId, final Long userId) {

@@ -29,9 +29,8 @@ public class TermCacheService {
     }
 
     @CachePut(value = "findTime", key = "#word + ':' + #language.toString()")
-    public Long updateFindTime(final String word, final Language language) {
-        return LocalDateTime.now()
-                .atZone(ZoneId.of("Asia/Seoul"))
+    public Long updateFindTime(final String word, final Language language, final LocalDateTime chatTime) {
+        return chatTime.atZone(ZoneId.of("Asia/Seoul"))
                 .toInstant()
                 .toEpochMilli();
     }
