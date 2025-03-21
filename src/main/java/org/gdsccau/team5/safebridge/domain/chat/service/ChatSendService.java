@@ -1,9 +1,6 @@
 package org.gdsccau.team5.safebridge.domain.chat.service;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +8,6 @@ import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.gdsccau.team5.safebridge.common.term.Language;
 import org.gdsccau.team5.safebridge.common.term.TermManager;
 import org.gdsccau.team5.safebridge.domain.chat.converter.ChatConverter;
-import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataWithNewChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TranslatedDataDto;
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
@@ -52,23 +48,12 @@ public class ChatSendService {
 
     public void sendTranslatedMessage(final TermDataWithNewChatDto result, final Language language, final Chat chat,
                                       final Long teamId, final Long userId) {
-        // TODO 이미 번역되었다면 (같은 문장, 다른 사람, 같은 언어) 번역 API를 호출하지 않는다.
+        // TODO 이미 번역되었다면 Local Cache -> DB 조회
         if (translationCheckService.isTranslationExists(chat.getId(), language)) {
-            Map<String, String> wordZip = new HashMap<>();
+            // 1. Local Cache 조회
 
-            List<String> words = result.getTerms().stream()
-                    .map(TermDataDto::getTerm)
-                    .toList();
-            for (String word : words) {
-                Long termId = termCheckService.findTermIdByWord(word);
-                String translatedWord = translatedTermCheckService.findTranslatedTermByLanguageAndTermId(language,
-                        termId);
-                wordZip.put(word, translatedWord);
-            }
-            String translatedText = translationCheckService.findTranslatedTextByChatIdAndLanguage(chat.getId(),
-                    language);
-            messagingTemplate.convertAndSend(TRANSLATE_SUB_URL + teamId + "/" + userId,
-                    ChatConverter.toTranslatedTextResponseDto(translatedText, wordZip, chat.getId()));
+            // 2. 없으면 DB 조회
+
         } else {
             CompletableFuture<TranslatedDataDto> translatedText = termManager.translate(
                     result.getNewChat(), result.getTerms(), language);
@@ -80,6 +65,7 @@ public class ChatSendService {
             });
             // TODO 예외처리
         }
+        // TODO Local Cache에 최근 호출 시각 + 누적 호출 횟수를 저장
     }
 
     public void sendTeamData(final Chat chat, final Long teamId, final Long userId) {
@@ -92,15 +78,17 @@ public class ChatSendService {
         String unReadMessageKey = redisManager.getUnReadMessageKey(userId, teamId);
         String zSetKey = redisManager.getZSetKey(userId);
 
-        int inRoom = redisManager.getInRoom(inRoomKey);
+        int inRoom = redisManager.getInRoomOrDefault(inRoomKey,
+                () -> userTeamCheckService.findInRoomByUserIdAndTeamId(userId, teamId));
         if (inRoom == 0) {
             redisManager.updateUnReadMessage(unReadMessageKey);
+            redisManager.updateUpdatedSet(userId, teamId);
         }
         redisManager.updateZSet(zSetKey, teamId, chat);
 
-        // TODO
         return createTeamListDto(
-                teamId, chat.getText(), chat.getCreatedAt(), redisManager.getUnReadMessage(unReadMessageKey)
+                teamId, chat.getText(), chat.getCreatedAt(), redisManager.getUnReadMessage(unReadMessageKey,
+                        () -> userTeamCheckService.findUnReadMessageByUserIdAndTeamId(userId, teamId))
         );
     }
 

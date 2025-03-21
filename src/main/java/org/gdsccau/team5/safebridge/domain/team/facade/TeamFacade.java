@@ -6,12 +6,15 @@ import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.gdsccau.team5.safebridge.domain.team.dto.request.TeamRequestDto.TeamCreateRequestDto;
 import org.gdsccau.team5.safebridge.domain.team.dto.response.TeamResponseDto.TeamDataDto;
 import org.gdsccau.team5.safebridge.domain.team.entity.Team;
+import org.gdsccau.team5.safebridge.domain.team.event.join.JoinTeamEvent;
+import org.gdsccau.team5.safebridge.domain.team.event.leave.LeaveTeamEvent;
 import org.gdsccau.team5.safebridge.domain.team.service.TeamCheckService;
 import org.gdsccau.team5.safebridge.domain.team.service.TeamService;
 import org.gdsccau.team5.safebridge.domain.user.entity.User;
 import org.gdsccau.team5.safebridge.domain.user.service.UserCheckService;
 import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamCheckService;
 import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,8 +37,8 @@ public class TeamFacade {
         Team team = teamService.createTeam(requestDto.getName());
         users.forEach(
                 user -> {
-                    redisManager.initRedis(user.getId(), team.getId());
                     userTeamService.createUserTeam(user, team);
+                    redisManager.initRedis(user.getId(), team.getId());
                 }
         );
     }
@@ -48,16 +51,18 @@ public class TeamFacade {
     }
 
     @Transactional
-    public TeamDataDto joinTeam(final Long teamId, final Long userId) {
+    public TeamDataDto joinTeam(final Long userId, final Long teamId) {
         String teamName = teamCheckService.findNameByTeamId(teamId);
         int numberOfUsers = userTeamCheckService.countNumOfUsersByTeamId(teamId);
+        userTeamService.updateInRoomWhenJoin(userId, teamId);
         redisManager.updateRedisWhenJoin(userId, teamId);
         return teamService.joinTeam(teamName, numberOfUsers);
     }
 
     @Transactional
-    public void leaveTeam(final Long teamId, final Long userId) {
+    public void leaveTeam(final Long userId, final Long teamId) {
         userTeamService.updateAccessDate(userId, teamId);
+        userTeamService.updateInRoomWhenLeave(userId, teamId);
         redisManager.updateRedisWhenLeave(userId, teamId);
         teamService.leaveTeam(teamId, userId);
     }

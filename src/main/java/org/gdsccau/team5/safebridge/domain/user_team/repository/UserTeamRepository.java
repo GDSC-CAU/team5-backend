@@ -3,6 +3,7 @@ package org.gdsccau.team5.safebridge.domain.user_team.repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.gdsccau.team5.safebridge.domain.team.dto.TeamDto.TeamOrderDto;
 import org.gdsccau.team5.safebridge.domain.user_team.entity.UserTeam;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -11,13 +12,13 @@ import org.springframework.data.repository.query.Param;
 public interface UserTeamRepository extends JpaRepository<UserTeam, Long> {
 
     @Query("SELECT ut.user.id FROM UserTeam ut WHERE ut.team.id = :teamId")
-    List<Long> findAllUserIdByTeamId(final Long teamId);
+    List<Long> findAllUserIdByTeamId(@Param("teamId") final Long teamId);
 
     @Query("SELECT count(*) FROM UserTeam ut WHERE ut.team.id = :teamId")
-    Integer countNumOfUsersByTeamId(final Long teamId);
+    Integer countNumOfUsersByTeamId(@Param("teamId") final Long teamId);
 
     @Query("SELECT ut.team.id FROM UserTeam ut WHERE ut.user.id = :userId")
-    List<Long> findAllTeamIdByUserId(final Long userId);
+    List<Long> findAllTeamIdByUserId(@Param("userId") final Long userId);
 
     @Query("SELECT ut FROM UserTeam ut WHERE ut.user.id = :userId AND ut.team.id = :teamId")
     Optional<UserTeam> findUserTeamByUserIdAndTeamId(@Param("userId") final Long userId,
@@ -27,4 +28,21 @@ public interface UserTeamRepository extends JpaRepository<UserTeam, Long> {
     Optional<LocalDateTime> findAccessDateByUserIdAndTeamId(@Param("userId") final Long userId,
                                                             @Param("teamId") final Long teamId);
 
+    @Query("SELECT ut.inRoom FROM UserTeam ut WHERE ut.user.id = :userId AND ut.team.id = :teamId")
+    Optional<Integer> findInRoomByUserIdAndTeamId(@Param("userId") final Long userId,
+                                                  @Param("teamId") final Long teamId);
+
+    @Query("SELECT ut.unReadMessage FROM UserTeam ut WHERE ut.user.id = :userId AND ut.team.id = :teamId")
+    Optional<Integer> findUnReadMessageByUserIdAndTeamId(@Param("userId") final Long userId,
+                                                         @Param("teamId") final Long teamId);
+
+    @Query("SELECT new org.gdsccau.team5.safebridge.domain.team.dto.TeamDto$TeamOrderDto(ut.user.id, h.teamId, h.lastChatTime) "
+            + "FROM UserTeam ut "
+            + "JOIN ( "
+            + "     SELECT c.team.id AS teamId, MAX(c.createdAt) AS lastChatTime "
+            + "     FROM Chat c "
+            + "     GROUP BY c.team.id"
+            + ") h ON ut.team.id = h.teamId"
+    )
+    List<TeamOrderDto> findAllTeamOrderByLastChatTime();
 }

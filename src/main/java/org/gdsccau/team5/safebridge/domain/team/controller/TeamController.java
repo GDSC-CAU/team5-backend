@@ -36,14 +36,14 @@ public class TeamController {
     @PostMapping("/{teamId}/users/{userId}/join")
     public ApiResponse<TeamDataDto> joinTeam(@PathVariable(name = "teamId") final Long teamId,
                                              @PathVariable(name = "userId") final Long userId) {
-        TeamDataDto teamDataDto = teamFacade.joinTeam(teamId, userId);
+        TeamDataDto teamDataDto = teamFacade.joinTeam(userId, teamId);
         return ApiResponse.onSuccess(TeamSuccessCode.JOIN_TEAM, teamDataDto);
     }
 
     @PostMapping("/{teamId}/users/{userId}/leave")
     public ApiResponse<Void> leaveTeam(@PathVariable(name = "teamId") final Long teamId,
                                        @PathVariable(name = "userId") final Long userId) {
-        teamFacade.leaveTeam(teamId, userId);
+        teamFacade.leaveTeam(userId, teamId);
         return ApiResponse.onSuccess(TeamSuccessCode.LEAVE_TEAM);
     }
 }

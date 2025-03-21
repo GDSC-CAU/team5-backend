@@ -28,7 +28,8 @@ public class UserTeamFacade {
                 .map(Long::parseLong)
                 .map(teamId -> {
                     String unReadMessageKey = redisManager.getUnReadMessageKey(userId, teamId);
-                    int unReadMessage = redisManager.getUnReadMessage(unReadMessageKey);
+                    int unReadMessage = redisManager.getUnReadMessage(unReadMessageKey,
+                            () -> userTeamCheckService.findUnReadMessageByUserIdAndTeamId(userId, teamId));
                     String teamName = teamCheckService.findNameByTeamId(teamId);
                     int numberOfUsers = userTeamCheckService.countNumOfUsersByTeamId(teamId);
                     ChatMetaDataDto chatMetaDataDto = chatCheckService.findChatMetaDataByTeamId(teamId);

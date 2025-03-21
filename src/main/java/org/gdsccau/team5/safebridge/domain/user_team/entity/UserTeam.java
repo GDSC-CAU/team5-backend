@@ -34,7 +34,7 @@ public class UserTeam extends BaseEntity {
 
     private LocalDateTime accessDate;
     private int unReadMessage;
-    private boolean inRoom;
+    private int inRoom;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "team_id")
@@ -48,5 +48,13 @@ public class UserTeam extends BaseEntity {
 
     public void updateAccessDate() {
         this.accessDate = LocalDateTime.now();
+    }
+
+    public void updateInRoomWhenJoin() {
+        this.inRoom = 1;
+    }
+
+    public void updateInRoomWhenLeave() {
+        this.inRoom = 0;
     }
 }
