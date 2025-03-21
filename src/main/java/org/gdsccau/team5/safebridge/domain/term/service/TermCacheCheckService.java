@@ -1,0 +1,9 @@
+package org.gdsccau.team5.safebridge.domain.term.service;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+@RequiredArgsConstructor
+@Service
+public class TermCacheCheckService {
+}
