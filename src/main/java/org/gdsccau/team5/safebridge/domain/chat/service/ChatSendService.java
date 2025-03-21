@@ -1,20 +1,26 @@
 package org.gdsccau.team5.safebridge.domain.chat.service;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.gdsccau.team5.safebridge.common.term.Language;
 import org.gdsccau.team5.safebridge.common.term.TermManager;
 import org.gdsccau.team5.safebridge.domain.chat.converter.ChatConverter;
+import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataWithNewChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TranslatedDataDto;
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
 import org.gdsccau.team5.safebridge.domain.team.dto.response.TeamResponseDto.TeamListDto;
 import org.gdsccau.team5.safebridge.domain.team.service.TeamCheckService;
+import org.gdsccau.team5.safebridge.domain.term.entity.Term;
 import org.gdsccau.team5.safebridge.domain.term.service.TermCheckService;
 import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermCheckService;
+import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermService;
 import org.gdsccau.team5.safebridge.domain.translation.service.TranslationCheckService;
 import org.gdsccau.team5.safebridge.domain.translation.service.TranslationService;
 import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamCheckService;
@@ -33,6 +39,7 @@ public class ChatSendService {
     private final TranslationService translationService;
     private final TranslationCheckService translationCheckService;
     private final TranslatedTermCheckService translatedTermCheckService;
+    private final TranslatedTermService translatedTermService;
     private final TermCheckService termCheckService;
     private final TeamCheckService teamCheckService;
     private final UserTeamCheckService userTeamCheckService;
@@ -49,22 +56,15 @@ public class ChatSendService {
     public void sendTranslatedMessage(final TermDataWithNewChatDto result, final Language language, final Chat chat,
                                       final Long teamId, final Long userId) {
         // TODO 이미 번역되었다면 Local Cache -> DB 조회
-        if (translationCheckService.isTranslationExists(chat.getId(), language)) {
-            // 1. Local Cache 조회
-
-            // 2. 없으면 DB 조회
-
-        } else {
-            CompletableFuture<TranslatedDataDto> translatedText = termManager.translate(
-                    result.getNewChat(), result.getTerms(), language);
-            translatedText.thenAccept(dto -> {
-                translationService.createTranslation(dto.getTranslatedText(), language, chat.getId());
-                messagingTemplate.convertAndSend(TRANSLATE_SUB_URL + teamId + "/" + userId,
-                        ChatConverter.toTranslatedTextResponseDto(dto.getTranslatedText(), dto.getTranslatedTerms(),
-                                chat.getId()));
-            });
-            // TODO 예외처리
-        }
+        CompletableFuture<TranslatedDataDto> translatedText = termManager.translate(
+                result.getNewChat(), result.getTerms(), language);
+        translatedText.thenAccept(dto -> {
+            translationService.createTranslation(dto.getTranslatedText(), language, chat.getId());
+            messagingTemplate.convertAndSend(TRANSLATE_SUB_URL + teamId + "/" + userId,
+                    ChatConverter.toTranslatedTextResponseDto(dto.getTranslatedText(), dto.getTranslatedTerms(),
+                            chat.getId()));
+        });
+        // TODO 비동기 처리에 대한 예외처리
         // TODO Local Cache에 최근 호출 시각 + 누적 호출 횟수를 저장
     }
 

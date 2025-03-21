@@ -20,4 +20,7 @@ public interface TranslatedTermRepository extends JpaRepository<TranslatedTerm, 
 
     @Query("SELECT tt.word FROM TranslatedTerm tt WHERE tt.language = :language AND tt.term.id = :termId")
     Optional<String> findTranslatedTermByLanguageAndTermId(final Language language, final Long termId);
+
+    @Query("SELECT count(tt) > 0 FROM TranslatedTerm tt WHERE tt.language = :language AND tt.term.id = :termId")
+    Boolean existsByLanguageAndTermId(final Language language, final Long termId);
 }

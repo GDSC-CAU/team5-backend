@@ -6,6 +6,8 @@ import org.gdsccau.team5.safebridge.domain.term.entity.Term;
 import org.gdsccau.team5.safebridge.domain.term.repository.TermRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor

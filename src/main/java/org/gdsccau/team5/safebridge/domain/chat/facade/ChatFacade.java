@@ -69,8 +69,7 @@ public class ChatFacade {
                                             final Long teamId) {
         Language language = userCheckService.findLanguageByUserId(userId);
         Slice<ChatMessageWithIsReadResponseDto> chatSlice = chatCheckService.findAllChatsByTeamId(Role.valueOf(role),
-                cursorId,
-                teamId, language);
+                cursorId, teamId, language);
         LocalDateTime accessDate = userTeamCheckService.findAccessDateByUserIdAndTeamId(userId, teamId);
         for (ChatMessageWithIsReadResponseDto chatMessage : chatSlice.getContent()) {
             chatMessage.setRead(chatMessage.getSendTime().isBefore(accessDate));

@@ -5,6 +5,7 @@ import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.translate.Translate;
 import com.google.cloud.translate.TranslateOptions;
 import com.google.cloud.translate.Translation;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,7 +17,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
 import lombok.extern.slf4j.Slf4j;
 import org.ahocorasick.trie.Emit;
 import org.ahocorasick.trie.Trie;
@@ -126,14 +129,34 @@ public class TermManager {
                 Translation translation = translate.translate(text,
                         Translate.TranslateOption.sourceLanguage(SOURCE_LANGUAGE_CODE),
                         Translate.TranslateOption.targetLanguage(language.getCode()));
-                Map<String, String> translatedTerms = this.translateTerms(translate, termDataDtos, language);
                 String translatedText = translation.getTranslatedText().replaceAll("&#39;", "'");
+                Map<String, String> translatedTerms = this.translateTerms(translate, termDataDtos, language);
                 return this.createdTranslatedDataDto(translatedText, translatedTerms);
             } catch (IOException e) {
                 log.error("Google Translate API 호출 중 오류 발생", e);
                 return this.createdTranslatedDataDto(null, null);
             }
         });
+    }
+
+    private Map<String, String> translateTerms(final Translate translate, final List<TermDataDto> termDataDtos,
+                                               final Language language) {
+        // TODO 이미 현장 용어에 대해 번역을 했는지 확인하고 안 했으면 Local Cache -> DB를 순서대로 조회해서 가져온다.
+        Map<String, String> result = new HashMap<>();
+        termDataDtos.forEach(termDataDto -> {
+            // TODO Local Cache 조회
+
+            Term term = termCheckService.findTermByWord(termDataDto.getTerm());
+            if (term == null) {
+                Translation translation = translate.translate(termDataDto.getMeaning(),
+                        Translate.TranslateOption.sourceLanguage(SOURCE_LANGUAGE_CODE),
+                        Translate.TranslateOption.targetLanguage(language.getCode()));
+                String translatedTerm = translation.getTranslatedText().replaceAll("&#39;", "'");
+                result.put(termDataDto.getTerm(), translatedTerm);
+            }
+
+        });
+        return result;
     }
 
     private void removeDuplicatedWord(final Set<String> terms, Set<String> finalTerms) {
@@ -185,38 +208,6 @@ public class TermManager {
                         """, type, projectId, privateKeyId, privateKey, clientEmail, clientId, authUri,
                 tokenUri, authProviderX509CertUrl, clientX509CertUrl, universeDomain);
         return new ByteArrayInputStream(jsonContent.getBytes(StandardCharsets.UTF_8));
-    }
-
-    private Map<String, String> translateTerms(final Translate translate, final List<TermDataDto> termDataDtos,
-                                               final Language language) {
-        Map<String, String> result = new HashMap<>();
-        termDataDtos.forEach(termDataDto -> {
-            // 1. Term을 가져온다.
-            Term term = termCheckService.findTermByWord(termDataDto.getTerm());
-            if (term == null) {
-                term = termService.createTerm(termDataDto.getTerm(), termDataDto.getMeaning());
-            }
-            // 2. Redis에서 번역본을 가져온다.
-            String translatedTermKey = redisManager.getTranslatedTermKey(term.getId(), language);
-            String translatedTerm =  redisManager.getTranslatedTerm(translatedTermKey);
-            // 3. Redis에 없으면 DB에서 가져온다. -> 락을 활용해 같은 요청에 대해선 락을 획득한 요청만 DB를 조회한다.
-            if (translatedTerm == null) {
-                translatedTerm = translatedTermCheckService.findTranslatedTermByLanguageAndTermId(language, term.getId());
-            }
-            // 4. DB에도 없으면 번역 API를 호출한다. (초기 1회, 불가피)
-            if (translatedTerm == null) {
-                Translation translation = translate.translate(term.getMeaning(),
-                        Translate.TranslateOption.sourceLanguage(SOURCE_LANGUAGE_CODE),
-                        Translate.TranslateOption.targetLanguage(language.getCode()));
-                translatedTerm = translation.getTranslatedText().replaceAll("&#39;", "'");
-                // 5. 번역본을 DB에 저장한다.
-                translatedTermService.createTranslatedTerm(term, language, translatedTerm);
-            }
-            // 6. Redis에 저장한다. 이 때, 이미 저장되어 있다면 TTL을 갱신한다. (Write-Through)
-            redisManager.updateTranslatedTerm(translatedTermKey, translatedTerm);
-            result.put(term.getWord(), translatedTerm);
-        });
-        return result;
     }
 
     private TranslatedDataDto createdTranslatedDataDto(final String translatedText,
