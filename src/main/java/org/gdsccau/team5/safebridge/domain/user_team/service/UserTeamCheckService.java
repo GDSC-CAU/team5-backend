@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.code.error.UserTeamErrorCode;
 import org.gdsccau.team5.safebridge.common.exception.handler.ExceptionHandler;
 import org.gdsccau.team5.safebridge.domain.team.dto.TeamDto.TeamOrderDto;
+import org.gdsccau.team5.safebridge.domain.user.dto.UserDto.UserIdAndLanguageDto;
 import org.gdsccau.team5.safebridge.domain.user_team.entity.UserTeam;
 import org.gdsccau.team5.safebridge.domain.user_team.repository.UserTeamRepository;
 import org.springframework.stereotype.Service;
@@ -31,6 +32,13 @@ public class UserTeamCheckService {
         List<Long> teamIds = userTeamRepository.findAllTeamIdByUserId(userId);
         this.validateUserTeamData(teamIds);
         return teamIds;
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserIdAndLanguageDto> findAllUserIdAndLanguageByTeamId(final Long teamId) {
+        List<UserIdAndLanguageDto> dtos = userTeamRepository.findAllUserIdAndLanguageByTeamId(teamId);
+        this.validateUserTeamData(dtos);
+        return dtos;
     }
 
     @Transactional(readOnly = true)

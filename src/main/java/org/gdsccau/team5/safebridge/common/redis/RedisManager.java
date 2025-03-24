@@ -2,6 +2,7 @@ package org.gdsccau.team5.safebridge.common.redis;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -23,20 +24,9 @@ public class RedisManager {
     private final static Integer TTL = 6;
     private final RedisTemplate<String, String> redisTemplate;
 
+    // InRoom
     public String getInRoomKey(final Long userId, final Long teamId) {
         return "userId:" + userId + ":teamId:" + teamId + ":inRoom";
-    }
-
-    public String getUnReadMessageKey(final Long userId, final Long teamId) {
-        return "userId:" + userId + ":teamId:" + teamId + ":unReadMessage";
-    }
-
-    public String getUpdatedSetKey() {
-        return "updatedSetKey";
-    }
-
-    public String getZSetKey(final Long userId) {
-        return "userId:" + userId + ":team";
     }
 
     public int getInRoomOrDefault(final String inRoomKey, final Supplier<Integer> dbLookUp) {
@@ -46,6 +36,11 @@ public class RedisManager {
         int inRoom = dbLookUp.get();
         updateInRoom(inRoomKey, inRoom);
         return inRoom;
+    }
+
+    // unReadMessage
+    public String getUnReadMessageKey(final Long userId, final Long teamId) {
+        return "userId:" + userId + ":teamId:" + teamId + ":unReadMessage";
     }
 
     public int getUnReadMessage(final String unReadMessageKey, final Supplier<Integer> dbLookUp) {
@@ -61,7 +56,12 @@ public class RedisManager {
         redisTemplate.opsForValue().increment(unReadMessageKey, 1);
     }
 
-    public Set<String> getUpdatedSet() {
+    // unReadMessageDirtySet
+    public String getUnReadMessageDirtySetKey() {
+        return "unReadMessageDirtySetKey";
+    }
+
+    public Set<String> getUnReadMessageDirtySet() {
         ScanOptions options = ScanOptions.scanOptions().match("*").count(100).build();
         Cursor<String> cursor = redisTemplate.opsForSet().scan("updatedSetKey", options);
 
@@ -76,14 +76,19 @@ public class RedisManager {
         return results;
     }
 
-    public void updateUpdatedSet(final Long userId, final Long teamId) {
-        redisTemplate.opsForSet().add(getUpdatedSetKey(), userId + ":" + teamId);
+    public void updateUnReadMessageDirtySet(final Long userId, final Long teamId) {
+        redisTemplate.opsForSet().add(getUnReadMessageDirtySetKey(), userId + ":" + teamId);
     }
 
-    public void clearUpdatedSet(final Set<String> beforeUpdatedSet) {
+    public void clearUnReadMessageDirtySet(final Set<String> beforeUpdatedSet) {
         if (beforeUpdatedSet != null && !beforeUpdatedSet.isEmpty()) {
-            redisTemplate.opsForSet().remove(getUpdatedSetKey(), beforeUpdatedSet.toArray());
+            redisTemplate.opsForSet().remove(getUnReadMessageDirtySetKey(), beforeUpdatedSet.toArray());
         }
+    }
+
+    // ZSet
+    public String getZSetKey(final Long userId) {
+        return "userId:" + userId + ":team";
     }
 
     public Set<String> getZSet(final String zSetKey) {
@@ -110,6 +115,32 @@ public class RedisManager {
         redisTemplate.opsForZSet().removeRange(zSetKey, 0, -1);
     }
 
+    // Term FindCount + FindTime
+    // Hash의 getAll은 O(N)이기 때문에 key 값으로 호출 날짜 yyyyMMddHH를 사용해 나눠 저장하자.
+    public String getTermFindCountHashKey(final LocalDateTime lastFindTime) {
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMddHH");
+        return lastFindTime.format(dateTimeFormatter);
+    }
+
+    public String getTermFindTimeZSetKey() {
+        return "termFindTimeZSetKey";
+    }
+
+    public void updateTermFindCountHash(final String termFindCountKey, final String word, final Language language,
+                                        final Integer count) {
+        String field = word + ":" + language.toString();
+        redisTemplate.opsForHash().increment(termFindCountKey, field, count);
+    }
+
+    public void updateTermFindTimeZSet(final String word, final Language language, final LocalDateTime lastFindTime) {
+        long score = lastFindTime
+                .atZone(ZoneId.of("Asia/Seoul"))
+                .toInstant()
+                .toEpochMilli();
+        redisTemplate.opsForZSet().add(getTermFindTimeZSetKey(), word + ":" + language.toString(), score);
+    }
+
+    // 종합
     public void initRedis(final Long userId, final Long teamId) {
         String inRoomKey = getInRoomKey(userId, teamId);
         String unReadMessageKey = getUnReadMessageKey(userId, teamId);

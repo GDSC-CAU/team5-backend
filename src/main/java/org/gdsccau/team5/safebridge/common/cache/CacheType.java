@@ -5,7 +5,7 @@ import lombok.Getter;
 @Getter
 public enum CacheType {
 
-    TERM_FIND_NUMBER("findNumber"),
+    TERM_FIND_COUNT("findCount"),
     TERM_FIND_TIME("findTime"),
     TERM_TRANSLATION("term");
 

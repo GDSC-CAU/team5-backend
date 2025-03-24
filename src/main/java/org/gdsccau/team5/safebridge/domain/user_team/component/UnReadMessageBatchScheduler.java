@@ -23,9 +23,9 @@ public class UnReadMessageBatchScheduler {
     @Scheduled(fixedRate = 300000) // 5분
     public void syncUnReadMessageToDB() {
         List<UserTeamUnReadMessageDto> dtos = new ArrayList<>();
-        Set<String> updatedSet = redisManager.getUpdatedSet();
-        if (!updatedSet.isEmpty()) {
-            updatedSet.forEach(data -> {
+        Set<String> unReadMessageDirtySet = redisManager.getUnReadMessageDirtySet();
+        if (!unReadMessageDirtySet.isEmpty()) {
+            unReadMessageDirtySet.forEach(data -> {
                 Long userId = Long.parseLong(data.split(":")[0]);
                 Long teamId = Long.parseLong(data.split(":")[1]);
                 int unReadMessage = redisManager.getUnReadMessage(redisManager.getUnReadMessageKey(userId, teamId),
@@ -33,12 +33,12 @@ public class UnReadMessageBatchScheduler {
                 dtos.add(UserTeamConverter.toUserTeamUnReadMessageDto(userId, teamId, unReadMessage));
             });
             userTeamService.syncUnReadMessageToDB(dtos);
-            redisManager.clearUpdatedSet(updatedSet);
+            redisManager.clearUnReadMessageDirtySet(unReadMessageDirtySet);
         }
     }
 
     private List<String> getAllUnReadMessageKeys() {
-        return redisManager.getUpdatedSet().stream()
+        return redisManager.getUnReadMessageDirtySet().stream()
                 .map(data -> {
                     Long userId = Long.parseLong(data.split(":")[0]);
                     Long teamId = Long.parseLong(data.split(":")[1]);

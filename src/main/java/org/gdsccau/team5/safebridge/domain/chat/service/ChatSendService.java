@@ -75,7 +75,7 @@ public class ChatSendService {
                 () -> userTeamCheckService.findInRoomByUserIdAndTeamId(userId, teamId));
         if (inRoom == 0) {
             redisManager.updateUnReadMessage(unReadMessageKey);
-            redisManager.updateUpdatedSet(userId, teamId);
+            redisManager.updateUnReadMessageDirtySet(userId, teamId);
         }
         redisManager.updateZSet(zSetKey, teamId, chat);
 

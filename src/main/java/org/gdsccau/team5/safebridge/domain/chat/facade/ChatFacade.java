@@ -1,11 +1,13 @@
 package org.gdsccau.team5.safebridge.domain.chat.facade;
 
 import java.time.LocalDateTime;
-import java.util.*;
-
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.gdsccau.team5.safebridge.common.term.Language;
 import org.gdsccau.team5.safebridge.common.term.TermManager;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataDto;
@@ -19,9 +21,10 @@ import org.gdsccau.team5.safebridge.domain.chat.service.ChatSendService;
 import org.gdsccau.team5.safebridge.domain.chat.service.ChatService;
 import org.gdsccau.team5.safebridge.domain.team.entity.Team;
 import org.gdsccau.team5.safebridge.domain.team.service.TeamCheckService;
-import org.gdsccau.team5.safebridge.domain.term.service.TermCacheService;
 import org.gdsccau.team5.safebridge.domain.term.service.TermCheckService;
+import org.gdsccau.team5.safebridge.domain.term.service.TermMetaDataService;
 import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermCheckService;
+import org.gdsccau.team5.safebridge.domain.user.dto.UserDto.UserIdAndLanguageDto;
 import org.gdsccau.team5.safebridge.domain.user.entity.User;
 import org.gdsccau.team5.safebridge.domain.user.enums.Role;
 import org.gdsccau.team5.safebridge.domain.user.service.UserCheckService;
@@ -43,31 +46,25 @@ public class ChatFacade {
     private final UserCheckService userCheckService;
     private final UserTeamCheckService userTeamCheckService;
     private final TermCheckService termCheckService;
-    private final TermCacheService termCacheService;
+    private final TermMetaDataService termMetaDataService;
     private final TranslatedTermCheckService translatedTermCheckService;
     private final TermManager termManager;
-    private final RedisManager redisManager;
+
 
     public void chat(final ChatMessageRequestDto chatRequestDto, final Long teamId, final Chat chat) {
         TermDataWithNewChatDto result = termManager.query(chatRequestDto.getMessage());
         chatSendService.sendChatMessage(result, chatRequestDto.getName(), chat, teamId);
-        List<Long> userIds = userTeamCheckService.findAllUserIdByTeamId(teamId);
-        Set<Language> languageSet = new HashSet<>();
-        for (Long userId : userIds) {
-            Language language = userCheckService.findLanguageByUserId(userId);
-            languageSet.add(language);
-            chatSendService.sendTranslatedMessage(result, language, chat, teamId, userId);
-            chatSendService.sendTeamData(chat, teamId, userId);
-        }
+        List<UserIdAndLanguageDto> dtos = userTeamCheckService.findAllUserIdAndLanguageByTeamId(teamId);
 
-        // TODO Local Cache UPDATE
-        result.getTerms().forEach(dto -> {
-            languageSet.forEach(language -> {
-                String word = dto.getTerm();
-                termCacheService.updateFindNumber(word, language);
-                termCacheService.updateFindTime(word, language, chat.getCreatedAt());
-            });
-        });
+        // Local Cache UPDATE - Async
+        termMetaDataService.updateTermMetaDataInLocalCache(result.getTerms(), getLanguageSet(dtos),
+                chat.getCreatedAt());
+
+        for (UserIdAndLanguageDto dto : dtos) {
+            Language language = dto.getLanguage();
+            chatSendService.sendTranslatedMessage(result, language, chat, teamId, dto.getUserId());
+            chatSendService.sendTeamData(chat, teamId, dto.getUserId());
+        }
     }
 
     @Transactional
@@ -93,7 +90,8 @@ public class ChatFacade {
                         .toList();
                 for (String word : words) {
                     Long termId = termCheckService.findTermIdByWord(word);
-                    String translatedWord = translatedTermCheckService.findTranslatedTermByLanguageAndTermId(language, termId);
+                    String translatedWord = translatedTermCheckService.findTranslatedTermByLanguageAndTermId(language,
+                            termId);
                     wordZip.put(word, translatedWord);
                 }
                 chatMessage.setTranslatedTerms(wordZip);
@@ -108,5 +106,11 @@ public class ChatFacade {
     public List<WorkResponseDto> findAllWorks(final Long userId) {
         List<Long> teamIds = userTeamCheckService.findAllTeamIdByUserId(userId);
         return chatCheckService.findAllWorks(teamIds);
+    }
+
+    private Set<Language> getLanguageSet(final List<UserIdAndLanguageDto> dtos) {
+        Set<Language> languageSet = new HashSet<>();
+        dtos.forEach(dto -> languageSet.add(dto.getLanguage()));
+        return languageSet;
     }
 }

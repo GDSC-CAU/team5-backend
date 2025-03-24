@@ -1,4 +1,4 @@
-package org.gdsccau.team5.safebridge.domain.team.component;
+package org.gdsccau.team5.safebridge.domain.team.scheduler;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;

@@ -1,15 +1,14 @@
 package org.gdsccau.team5.safebridge.domain.term.service;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.gdsccau.team5.safebridge.common.term.Language;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -22,10 +21,11 @@ public class TermCacheService {
         return word + ":" + translatedWord;
     }
 
-    @CachePut(value = "findNumber", key = "#word + ':' + #language.toString()")
-    public Integer updateFindNumber(final String word, final Language language) {
-        Integer currentFindNumber = Objects.requireNonNull(cacheManager.getCache("findNumber")).get(word + ':' + language.toString(), Integer.class);
-        return currentFindNumber == null ? 1 : currentFindNumber + 1;
+    @CachePut(value = "findCount", key = "#word + ':' + #language.toString()")
+    public Integer updateFindCount(final String word, final Language language) {
+        Integer currentFindCount = Objects.requireNonNull(cacheManager.getCache("findCount"))
+                .get(word + ':' + language.toString(), Integer.class);
+        return currentFindCount == null ? 1 : currentFindCount + 1;
     }
 
     @CachePut(value = "findTime", key = "#word + ':' + #language.toString()")
@@ -40,8 +40,8 @@ public class TermCacheService {
 
     }
 
-    @CacheEvict(value = "findNumber", key = "#word + ':' + #language.toString()")
-    public void deleteFindNumber(final String word, final Language language) {
+    @CacheEvict(value = "findCount", key = "#word + ':' + #language.toString()")
+    public void deleteFindCount(final String word, final Language language) {
 
     }
 

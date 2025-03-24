@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.gdsccau.team5.safebridge.domain.team.dto.TeamDto.TeamOrderDto;
+import org.gdsccau.team5.safebridge.domain.user.dto.UserDto.UserIdAndLanguageDto;
 import org.gdsccau.team5.safebridge.domain.user_team.entity.UserTeam;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -13,6 +14,11 @@ public interface UserTeamRepository extends JpaRepository<UserTeam, Long> {
 
     @Query("SELECT ut.user.id FROM UserTeam ut WHERE ut.team.id = :teamId")
     List<Long> findAllUserIdByTeamId(@Param("teamId") final Long teamId);
+
+    @Query("SELECT new org.gdsccau.team5.safebridge.domain.user.dto.UserDto$UserIdAndLanguageDto(ut.user.id, ut.user.language) "
+            + "FROM UserTeam ut "
+            + "WHERE ut.team.id = :teamId")
+    List<UserIdAndLanguageDto> findAllUserIdAndLanguageByTeamId(@Param("teamId") Long teamId);
 
     @Query("SELECT count(*) FROM UserTeam ut WHERE ut.team.id = :teamId")
     Integer countNumOfUsersByTeamId(@Param("teamId") final Long teamId);
