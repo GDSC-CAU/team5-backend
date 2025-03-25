@@ -31,9 +31,9 @@ public class TermCacheCheckService {
     }
 
     @Cacheable(value = "findTime", key = "#word + ':' + #language.toString()")
-    public Long findTime(final String word, final Language language) {
+    public String findTime(final String word, final Language language) {
         return Objects.requireNonNull(cacheManager.getCache("findTime"))
-                .get(word + ':' + language.toString(), Long.class);
+                .get(word + ':' + language.toString(), String.class);
     }
 
     public Map<Object, Object> getAllKeyAndValueInCache(final String cacheName) {

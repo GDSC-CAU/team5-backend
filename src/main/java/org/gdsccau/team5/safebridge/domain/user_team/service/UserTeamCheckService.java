@@ -28,6 +28,13 @@ public class UserTeamCheckService {
     }
 
     @Transactional(readOnly = true)
+    public List<Long> findAllUserIdWithTeam() {
+        List<Long> userIds = userTeamRepository.findAllUserIdWithTeam();
+        this.validateUserTeamData(userIds);
+        return userIds;
+    }
+
+    @Transactional(readOnly = true)
     public List<Long> findAllTeamIdByUserId(final Long userId) {
         List<Long> teamIds = userTeamRepository.findAllTeamIdByUserId(userId);
         this.validateUserTeamData(teamIds);

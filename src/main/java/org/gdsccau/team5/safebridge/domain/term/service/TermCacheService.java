@@ -1,7 +1,6 @@
 package org.gdsccau.team5.safebridge.domain.term.service;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.gdsccau.team5.safebridge.common.term.Language;
@@ -29,10 +28,8 @@ public class TermCacheService {
     }
 
     @CachePut(value = "findTime", key = "#word + ':' + #language.toString()")
-    public Long updateFindTime(final String word, final Language language, final LocalDateTime chatTime) {
-        return chatTime.atZone(ZoneId.of("Asia/Seoul"))
-                .toInstant()
-                .toEpochMilli();
+    public String updateFindTime(final String word, final Language language, final LocalDateTime chatTime) {
+        return chatTime.toString();
     }
 
     @CacheEvict(value = "term", key = "#word + ':' + #language.toString()")

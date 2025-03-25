@@ -1,8 +1,6 @@
 package org.gdsccau.team5.safebridge.domain.team.scheduler;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamCheckService;
@@ -23,10 +21,7 @@ public class ZSetWarmingScheduler {
     }
 
     private void clearZSet() {
-        Set<Long> userIds = new HashSet<>();
-        userTeamCheckService.findAllTeamOrderByLastChatTime()
-                .forEach(data -> userIds.add(data.getUserId()));
-        userIds
+        userTeamCheckService.findAllUserIdWithTeam()
                 .forEach(userId -> redisManager.clearZSet(redisManager.getZSetKey(userId)));
     }
 
@@ -36,7 +31,6 @@ public class ZSetWarmingScheduler {
                     Long userId = data.getUserId();
                     Long teamId = data.getTeamId();
                     LocalDateTime lastChatTime = data.getLastChatTime();
-
                     redisManager.updateZSet(redisManager.getZSetKey(userId), teamId, lastChatTime);
                 });
     }

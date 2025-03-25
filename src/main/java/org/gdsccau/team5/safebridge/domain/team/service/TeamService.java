@@ -30,16 +30,12 @@ public class TeamService {
         log.info("채팅방 {} 삭제하기", teamId);
     }
 
-    @Transactional
     public TeamDataDto joinTeam(final String teamName, final int numberOfUsers) {
-        // TODO inRoom, unReadMessage 값에 대한 DB 동기화
         log.info("채팅방 {} 접속하기", teamName);
         return this.createTeamDataDto(teamName, numberOfUsers);
     }
 
-    @Transactional
     public void leaveTeam(final Long teamId, final Long userId) {
-        // TODO inRoom, unReadMessage 값에 대한 DB 동기화
         log.info("{}가 채팅방 {} 나가기", userId, teamId);
     }
 

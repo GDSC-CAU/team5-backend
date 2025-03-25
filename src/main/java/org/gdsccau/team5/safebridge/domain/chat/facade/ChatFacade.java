@@ -50,21 +50,21 @@ public class ChatFacade {
     private final TranslatedTermCheckService translatedTermCheckService;
     private final TermManager termManager;
 
-
     public void chat(final ChatMessageRequestDto chatRequestDto, final Long teamId, final Chat chat) {
-        TermDataWithNewChatDto result = termManager.query(chatRequestDto.getMessage());
-        chatSendService.sendChatMessage(result, chatRequestDto.getName(), chat, teamId);
+        TermDataWithNewChatDto result = termManager.query(chatRequestDto.getMessage()); // 현장용어 추출
+        chatSendService.sendChatMessage(result, chatRequestDto.getName(), chat, teamId); // 채팅은 즉시 전송
+
+        // 채팅방에 속한 모든 사용자의 Id와 언어 가져오기
         List<UserIdAndLanguageDto> dtos = userTeamCheckService.findAllUserIdAndLanguageByTeamId(teamId);
+        // 현장용어를 위한 Local Cache 업데이트
+        termMetaDataService.updateTermMetaDataInLocalCache(result.getTerms(), getLanguageSet(dtos), chat.getCreatedAt());
 
-        // Local Cache UPDATE - Async
-        termMetaDataService.updateTermMetaDataInLocalCache(result.getTerms(), getLanguageSet(dtos),
-                chat.getCreatedAt());
-
-        for (UserIdAndLanguageDto dto : dtos) {
+        // 채팅방에 속한 모든 사용자에 대해 번역 데이터를 전송하고 채팅방 순서를 갱신한다.
+        dtos.forEach(dto -> {
             Language language = dto.getLanguage();
             chatSendService.sendTranslatedMessage(result, language, chat, teamId, dto.getUserId());
             chatSendService.sendTeamData(chat, teamId, dto.getUserId());
-        }
+        });
     }
 
     @Transactional

@@ -63,7 +63,7 @@ public class RedisManager {
 
     public Set<String> getUnReadMessageDirtySet() {
         ScanOptions options = ScanOptions.scanOptions().match("*").count(100).build();
-        Cursor<String> cursor = redisTemplate.opsForSet().scan("updatedSetKey", options);
+        Cursor<String> cursor = redisTemplate.opsForSet().scan("unReadMessageDirtySetKey", options);
 
         Set<String> results = new HashSet<>();
         try {
@@ -101,8 +101,10 @@ public class RedisManager {
                 .toInstant()
                 .toEpochMilli();
         redisTemplate.opsForZSet().add(zSetKey, String.valueOf(teamId), score);
+        redisTemplate.expire(zSetKey, TTL, TimeUnit.MINUTES);
     }
 
+    // TODO Warming 할 때 TTL 갱신을 해야할까? + TTL과 Warming 주기의 관계에 대해서 고민!
     public void updateZSet(final String zSetKey, final Long teamId, final LocalDateTime lastChatTime) {
         long score = lastChatTime
                 .atZone(ZoneId.of("Asia/Seoul"))
@@ -126,14 +128,14 @@ public class RedisManager {
         return "termFindTimeZSetKey";
     }
 
-    public void updateTermFindCountHash(final String termFindCountKey, final String word, final Language language,
-                                        final Integer count) {
+    public void updateTermFindCountHash(final String word, final Language language,
+                                        final Integer count, final LocalDateTime chatTime) {
         String field = word + ":" + language.toString();
-        redisTemplate.opsForHash().increment(termFindCountKey, field, count);
+        redisTemplate.opsForHash().increment(getTermFindCountHashKey(chatTime), field, count);
     }
 
-    public void updateTermFindTimeZSet(final String word, final Language language, final LocalDateTime lastFindTime) {
-        long score = lastFindTime
+    public void updateTermFindTimeZSet(final String word, final Language language, final LocalDateTime chatTime) {
+        long score = chatTime
                 .atZone(ZoneId.of("Asia/Seoul"))
                 .toInstant()
                 .toEpochMilli();

@@ -1,4 +1,4 @@
-package org.gdsccau.team5.safebridge.domain.user_team.component;
+package org.gdsccau.team5.safebridge.domain.user_team.scheduler;
 
 import java.util.ArrayList;
 import java.util.List;
