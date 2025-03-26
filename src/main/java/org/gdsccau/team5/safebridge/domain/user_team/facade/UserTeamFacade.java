@@ -23,12 +23,12 @@ public class UserTeamFacade {
     private final RedisManager redisManager;
 
     public List<TeamListDto> findAllTeamDataByUserId(final Long userId) {
-        String zSetKey = redisManager.getZSetKey(userId);
-        return Objects.requireNonNull(redisManager.getZSet(zSetKey)).stream()
+        String teamListKey = redisManager.getTeamListKey(userId);
+        return Objects.requireNonNull(redisManager.getTeamList(teamListKey)).stream()
                 .map(Long::parseLong)
                 .map(teamId -> {
                     String unReadMessageKey = redisManager.getUnReadMessageKey(userId, teamId);
-                    int unReadMessage = redisManager.getUnReadMessage(unReadMessageKey,
+                    int unReadMessage = redisManager.getUnReadMessageOrDefault(unReadMessageKey,
                             () -> userTeamCheckService.findUnReadMessageByUserIdAndTeamId(userId, teamId));
                     String teamName = teamCheckService.findNameByTeamId(teamId);
                     int numberOfUsers = userTeamCheckService.countNumOfUsersByTeamId(teamId);

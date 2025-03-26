@@ -1,4 +1,4 @@
-package org.gdsccau.team5.safebridge.common.redis;
+package org.gdsccau.team5.safebridge.common.redis.publisher;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;

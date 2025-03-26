@@ -1,19 +1,16 @@
 package org.gdsccau.team5.safebridge.common.redis;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.gdsccau.team5.safebridge.common.term.Language;
+import org.gdsccau.team5.safebridge.common.redis.inroom.RedisInRoomManager;
+import org.gdsccau.team5.safebridge.common.redis.teamlist.RedisTeamListManager;
+import org.gdsccau.team5.safebridge.common.redis.term.RedisTermManager;
+import org.gdsccau.team5.safebridge.common.redis.unreadmessage.RedisUrmManager;
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
-import org.springframework.data.redis.core.Cursor;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -21,201 +18,111 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class RedisManager {
 
-    private final static Integer TTL = 6;
-    private final RedisTemplate<String, String> redisTemplate;
+    private final RedisInRoomManager redisInRoomManager;
+    private final RedisUrmManager redisUrmManager;
+    private final RedisTeamListManager redisTeamListManager;
+    private final RedisTermManager redisTermManager;
 
-    // InRoom
+    public void initRedis(final Long userId, final Long teamId) {
+        String inRoomKey = redisInRoomManager.getInRoomKey(userId, teamId);
+        String unReadMessageKey = redisUrmManager.getUnReadMessageKey(userId, teamId);
+        String teamListKey = redisTeamListManager.getTeamListKey(userId);
+
+        redisInRoomManager.initInRoom(inRoomKey);
+        redisUrmManager.initUnReadMessage(unReadMessageKey);
+        redisTeamListManager.initTeamList(teamListKey, teamId);
+    }
+
     public String getInRoomKey(final Long userId, final Long teamId) {
-        return "userId:" + userId + ":teamId:" + teamId + ":inRoom";
+        return redisInRoomManager.getInRoomKey(userId, teamId);
+    }
+
+    public String getUnReadMessageKey(final Long userId, final Long teamId) {
+        return redisUrmManager.getUnReadMessageKey(userId, teamId);
+    }
+
+    public String getTeamListKey(final Long userId) {
+        return redisTeamListManager.getTeamListKey(userId);
     }
 
     public int getInRoomOrDefault(final String inRoomKey, final Supplier<Integer> dbLookUp) {
-        if (isInRoomExists(inRoomKey)) {
-            return getInRoom(inRoomKey);
-        }
-        int inRoom = dbLookUp.get();
-        updateInRoom(inRoomKey, inRoom);
-        return inRoom;
+        return redisInRoomManager.getInRoomOrDefault(inRoomKey, dbLookUp);
     }
 
-    // unReadMessage
-    public String getUnReadMessageKey(final Long userId, final Long teamId) {
-        return "userId:" + userId + ":teamId:" + teamId + ":unReadMessage";
-    }
-
-    public int getUnReadMessage(final String unReadMessageKey, final Supplier<Integer> dbLookUp) {
-        if (isUnReadMessageExists(unReadMessageKey)) {
-            return getUnReadMessage(unReadMessageKey);
-        }
-        int unReadMessage = dbLookUp.get();
-        updateUnReadMessage(unReadMessageKey, unReadMessage);
-        return unReadMessage;
-    }
-
-    public void updateUnReadMessage(final String unReadMessageKey) {
-        redisTemplate.opsForValue().increment(unReadMessageKey, 1);
-    }
-
-    // unReadMessageDirtySet
-    public String getUnReadMessageDirtySetKey() {
-        return "unReadMessageDirtySetKey";
+    public int getUnReadMessageOrDefault(final String unReadMessageKey, final Supplier<Integer> dbLookUp) {
+        return redisUrmManager.getUnReadMessageOrDefault(unReadMessageKey, dbLookUp);
     }
 
     public Set<String> getUnReadMessageDirtySet() {
-        ScanOptions options = ScanOptions.scanOptions().match("*").count(100).build();
-        Cursor<String> cursor = redisTemplate.opsForSet().scan("unReadMessageDirtySetKey", options);
+        return redisUrmManager.getUnReadMessageDirtySet();
+    }
 
-        Set<String> results = new HashSet<>();
-        try {
-            while (cursor.hasNext()) {
-                results.add(cursor.next());
-            }
-        } finally {
-            cursor.close();
-        }
-        return results;
+    public Set<String> getTeamList(final String teamListKey) {
+        return redisTeamListManager.getTeamList(teamListKey);
+    }
+
+    // Hot Term의 정의에 따르면 ZSet의 모든 용어를 가져오는 것이 아니라 최근 용어만 가져온다.
+    public Set<String> getTermFindTimeZSet() {
+        return redisTermManager.getTermFindTimeZSet();
+    }
+
+    public Map<Object, Object> getTermFindCount(final LocalDateTime chatTime) {
+        return redisTermManager.getTermFindCount(chatTime);
+    }
+
+    public void updateUnReadMessage(final String unReadMessageKey) {
+        redisUrmManager.updateUnReadMessage(unReadMessageKey);
     }
 
     public void updateUnReadMessageDirtySet(final Long userId, final Long teamId) {
-        redisTemplate.opsForSet().add(getUnReadMessageDirtySetKey(), userId + ":" + teamId);
+        redisUrmManager.updateUnReadMessageDirtySet(userId, teamId);
     }
 
-    public void clearUnReadMessageDirtySet(final Set<String> beforeUpdatedSet) {
-        if (beforeUpdatedSet != null && !beforeUpdatedSet.isEmpty()) {
-            redisTemplate.opsForSet().remove(getUnReadMessageDirtySetKey(), beforeUpdatedSet.toArray());
-        }
-    }
-
-    // ZSet
-    public String getZSetKey(final Long userId) {
-        return "userId:" + userId + ":team";
-    }
-
-    public Set<String> getZSet(final String zSetKey) {
-        return redisTemplate.opsForZSet().reverseRange(zSetKey, 0, -1);
-    }
-
-    public void updateZSet(final String zSetKey, final Long teamId, final Chat chat) {
-        long score = chat.getCreatedAt()
-                .atZone(ZoneId.of("Asia/Seoul"))
-                .toInstant()
-                .toEpochMilli();
-        redisTemplate.opsForZSet().add(zSetKey, String.valueOf(teamId), score);
-        redisTemplate.expire(zSetKey, TTL, TimeUnit.MINUTES);
+    public void updateTeamList(final String teamListKey, final Long teamId, final Chat chat) {
+        redisTeamListManager.updateTeamList(teamListKey, teamId, chat);
     }
 
     // TODO Warming 할 때 TTL 갱신을 해야할까? + TTL과 Warming 주기의 관계에 대해서 고민!
-    public void updateZSet(final String zSetKey, final Long teamId, final LocalDateTime lastChatTime) {
-        long score = lastChatTime
-                .atZone(ZoneId.of("Asia/Seoul"))
-                .toInstant()
-                .toEpochMilli();
-        redisTemplate.opsForZSet().add(zSetKey, String.valueOf(teamId), score);
+    public void updateTeamList(final String teamListKey, final Long teamId, final LocalDateTime lastChatTime) {
+        redisTeamListManager.updateTeamList(teamListKey, teamId, lastChatTime);
     }
 
-    public void clearZSet(final String zSetKey) {
-        redisTemplate.opsForZSet().removeRange(zSetKey, 0, -1);
+    public void updateTermFindTimeZSet(final String member, final LocalDateTime chatTime) {
+        redisTermManager.updateTermFindTimeZSet(member, chatTime);
     }
 
-    // Term FindCount + FindTime
-    // Hash의 getAll은 O(N)이기 때문에 key 값으로 호출 날짜 yyyyMMddHH를 사용해 나눠 저장하자.
-    public String getTermFindCountHashKey(final LocalDateTime lastFindTime) {
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMddHH");
-        return lastFindTime.format(dateTimeFormatter);
-    }
-
-    public String getTermFindTimeZSetKey() {
-        return "termFindTimeZSetKey";
-    }
-
-    public void updateTermFindCountHash(final String word, final Language language,
-                                        final Integer count, final LocalDateTime chatTime) {
-        String field = word + ":" + language.toString();
-        redisTemplate.opsForHash().increment(getTermFindCountHashKey(chatTime), field, count);
-    }
-
-    public void updateTermFindTimeZSet(final String word, final Language language, final LocalDateTime chatTime) {
-        long score = chatTime
-                .atZone(ZoneId.of("Asia/Seoul"))
-                .toInstant()
-                .toEpochMilli();
-        redisTemplate.opsForZSet().add(getTermFindTimeZSetKey(), word + ":" + language.toString(), score);
-    }
-
-    // 종합
-    public void initRedis(final Long userId, final Long teamId) {
-        String inRoomKey = getInRoomKey(userId, teamId);
-        String unReadMessageKey = getUnReadMessageKey(userId, teamId);
-        String zSetKey = getZSetKey(userId);
-
-        initInRoom(inRoomKey);
-        initUnReadMessage(unReadMessageKey);
-        initZSet(zSetKey, teamId);
+    public void updateTermFindCountHash(final String field, final Integer count, final String findCountHashKey) {
+        redisTermManager.updateTermFindCountHash(field, count, findCountHashKey);
     }
 
     public void updateRedisWhenJoin(final Long userId, final Long teamId) {
-        String inRoomKey = this.getInRoomKey(userId, teamId);
-        String unReadMessageKey = this.getUnReadMessageKey(userId, teamId);
-        redisTemplate.opsForValue().set(inRoomKey, "1");
-        redisTemplate.opsForValue().set(unReadMessageKey, "0");
+        String inRoomKey = redisInRoomManager.getInRoomKey(userId, teamId);
+        String unReadMessageKey = redisUrmManager.getUnReadMessageKey(userId, teamId);
+        redisInRoomManager.updateInRoomWhenJoin(inRoomKey);
+        redisUrmManager.updateUnReadMessageWhenJoinAndLeave(unReadMessageKey);
     }
 
     public void updateRedisWhenLeave(final Long userId, final Long teamId) {
-        String inRoomKey = this.getInRoomKey(userId, teamId);
-        String unReadMessageKey = this.getUnReadMessageKey(userId, teamId);
-        redisTemplate.opsForValue().set(inRoomKey, "0");
-        redisTemplate.opsForValue().set(unReadMessageKey, "0");
+        String inRoomKey = redisInRoomManager.getInRoomKey(userId, teamId);
+        String unReadMessageKey = redisUrmManager.getUnReadMessageKey(userId, teamId);
+        redisInRoomManager.updateInRoomWhenLeave(inRoomKey);
+        redisUrmManager.updateUnReadMessageWhenJoinAndLeave(unReadMessageKey);
     }
 
     public void updateRedisWhenDelete(final Long userId, final Long teamId) {
-        String inRoomKey = getInRoomKey(userId, teamId);
-        String unReadMessageKey = getUnReadMessageKey(userId, teamId);
-        String zSetKey = getZSetKey(userId);
-        redisTemplate.delete(inRoomKey);
-        redisTemplate.delete(unReadMessageKey);
-        redisTemplate.opsForZSet().remove(zSetKey, String.valueOf(teamId));
+        String inRoomKey = redisInRoomManager.getInRoomKey(userId, teamId);
+        String unReadMessageKey = redisUrmManager.getUnReadMessageKey(userId, teamId);
+        String teamListKey = redisTeamListManager.getTeamListKey(userId);
+        redisInRoomManager.deleteInRoom(inRoomKey);
+        redisUrmManager.deleteUnReadMessage(unReadMessageKey);
+        redisTeamListManager.deleteTeamList(teamListKey, teamId);
     }
 
-    private Boolean isInRoomExists(final String inRoomKey) {
-        return redisTemplate.hasKey(inRoomKey);
+    public void clearUnReadMessageDirtySet(final Set<String> beforeUpdatedSet) {
+        redisUrmManager.clearUnReadMessageDirtySet(beforeUpdatedSet);
     }
 
-    private int getInRoom(final String inRoomKey) {
-        String inRoomValue = redisTemplate.opsForValue().get(inRoomKey);
-        return inRoomValue != null ? Integer.parseInt(inRoomValue) : 0;
-    }
-
-    private void updateInRoom(final String inRoomKey, final int inRoom) {
-        redisTemplate.opsForValue().set(inRoomKey, String.valueOf(inRoom));
-    }
-
-    private Boolean isUnReadMessageExists(final String unReadMessageKey) {
-        return redisTemplate.hasKey(unReadMessageKey);
-    }
-
-    private int getUnReadMessage(final String unReadMessageKey) {
-        String unReadMessageValue = redisTemplate.opsForValue().get(unReadMessageKey);
-        return unReadMessageValue != null ? Integer.parseInt(unReadMessageValue) : 0;
-    }
-
-    private void updateUnReadMessage(final String unReadMessageKey, final int unReadMessage) {
-        redisTemplate.opsForValue().set(unReadMessageKey, String.valueOf(unReadMessage));
-    }
-
-    private void initInRoom(final String inRoomKey) {
-        redisTemplate.opsForValue().set(inRoomKey, "0", TTL, TimeUnit.MINUTES);
-    }
-
-    private void initUnReadMessage(final String unReadMessageKey) {
-        redisTemplate.opsForValue().set(unReadMessageKey, "0", TTL, TimeUnit.MINUTES);
-    }
-
-    private void initZSet(final String zSetKey, final Long teamId) {
-        long score = LocalDateTime.now()
-                .atZone(ZoneId.of("Asia/Seoul"))
-                .toInstant()
-                .toEpochMilli();
-        redisTemplate.opsForZSet().add(zSetKey, String.valueOf(teamId), score);
-        redisTemplate.expire(zSetKey, TTL, TimeUnit.MINUTES);
+    public void clearTeamList(final String teamListKey) {
+        redisTeamListManager.clearTeamList(teamListKey);
     }
 }

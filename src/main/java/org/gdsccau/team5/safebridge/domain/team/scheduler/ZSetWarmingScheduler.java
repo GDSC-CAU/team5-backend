@@ -22,7 +22,7 @@ public class ZSetWarmingScheduler {
 
     private void clearZSet() {
         userTeamCheckService.findAllUserIdWithTeam()
-                .forEach(userId -> redisManager.clearZSet(redisManager.getZSetKey(userId)));
+                .forEach(userId -> redisManager.clearTeamList(redisManager.getTeamListKey(userId)));
     }
 
     private void warmingZSet() {
@@ -31,7 +31,7 @@ public class ZSetWarmingScheduler {
                     Long userId = data.getUserId();
                     Long teamId = data.getTeamId();
                     LocalDateTime lastChatTime = data.getLastChatTime();
-                    redisManager.updateZSet(redisManager.getZSetKey(userId), teamId, lastChatTime);
+                    redisManager.updateTeamList(redisManager.getTeamListKey(userId), teamId, lastChatTime);
                 });
     }
 }

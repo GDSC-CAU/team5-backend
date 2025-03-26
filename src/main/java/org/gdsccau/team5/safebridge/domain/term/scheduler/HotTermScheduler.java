@@ -5,8 +5,7 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.gdsccau.team5.safebridge.common.cache.CacheType;
 import org.gdsccau.team5.safebridge.common.redis.RedisManager;
-import org.gdsccau.team5.safebridge.common.redis.RedisMessagePublisher;
-import org.gdsccau.team5.safebridge.common.term.Language;
+import org.gdsccau.team5.safebridge.common.redis.publisher.RedisMessagePublisher;
 import org.gdsccau.team5.safebridge.domain.term.service.TermCacheCheckService;
 import org.gdsccau.team5.safebridge.domain.term.service.TermCacheService;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -31,7 +30,7 @@ public class HotTermScheduler {
 
         // 2. 누적 호출 횟수는 Hash를, 최근 호출 시각은 ZSet을 이용해 Redis에 값을 업데이트 한다.
         updateTermFindTimeZSet(cacheEntriesForTime);
-        updateTermFindCountHash(cacheEntriesForTime, cacheEntriesForCount);
+        updateTermFindCountHash(cacheEntriesForCount);
 
         // 3. Local Cache에 저장했던 값은 삭제한다.
         deleteTermFindTimeInLocalCache(cacheEntriesForTime);
@@ -43,37 +42,32 @@ public class HotTermScheduler {
 
     private void updateTermFindTimeZSet(final Map<Object, Object> cacheEntriesForTime) {
         cacheEntriesForTime.forEach((k, v) -> {
-            String word = ((String) k).split(":")[0];
-            Language language = Language.valueOf(((String) k).split(":")[1]);
+            String member = (String) k;
             LocalDateTime chatTime = LocalDateTime.parse((String) v);
-            redisManager.updateTermFindTimeZSet(word, language, chatTime);
+            redisManager.updateTermFindTimeZSet(member, chatTime);
         });
     }
 
-    private void updateTermFindCountHash(final Map<Object, Object> cacheEntriesForTime,
-                                         final Map<Object, Object> cacheEntriesForCount) {
+    private void updateTermFindCountHash(final Map<Object, Object> cacheEntriesForCount) {
         cacheEntriesForCount.forEach((k, v) -> {
-            String word = ((String) k).split(":")[0];
-            Language language = Language.valueOf(((String) k).split(":")[1]);
-            Integer count = (Integer) v;
-            LocalDateTime chatTime = LocalDateTime.parse((String) cacheEntriesForTime.get(k));
-            redisManager.updateTermFindCountHash(word, language, count, chatTime);
+            String field = (String) k;
+            Integer count = Integer.parseInt(((String) v).split(":")[0]);
+            String findCountHashKey = ((String) v).split(":")[1];
+            redisManager.updateTermFindCountHash(field, count, findCountHashKey);
         });
     }
 
     private void deleteTermFindTimeInLocalCache(final Map<Object, Object> cacheEntriesForTime) {
         cacheEntriesForTime.forEach((k, v) -> {
-            String word = ((String) k).split(":")[0];
-            Language language = Language.valueOf(((String) k).split(":")[1]);
-            termCacheService.deleteFindTime(word, language);
+            String key = (String) k;
+            termCacheService.deleteFindTime(key);
         });
     }
 
     private void deleteTermFindCountHashInLocalCache(final Map<Object, Object> cacheEntriesForCount) {
         cacheEntriesForCount.forEach((k, v) -> {
-            String word = ((String) k).split(":")[0];
-            Language language = Language.valueOf(((String) k).split(":")[1]);
-            termCacheService.deleteFindCount(word, language);
+            String key = (String) k;
+            termCacheService.deleteFindCount(key);
         });
     }
 }

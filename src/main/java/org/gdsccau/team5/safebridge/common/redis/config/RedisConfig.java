@@ -1,5 +1,6 @@
-package org.gdsccau.team5.safebridge.common.redis;
+package org.gdsccau.team5.safebridge.common.redis.config;
 
+import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.gdsccau.team5.safebridge.domain.term.subscriber.RedisMessageSubscriber;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -47,8 +48,8 @@ public class RedisConfig {
     }
 
     @Bean
-    public MessageListenerAdapter messageListenerAdapter() {
-        return new MessageListenerAdapter(new RedisMessageSubscriber());
+    public MessageListenerAdapter messageListenerAdapter(RedisManager redisManager) {
+        return new MessageListenerAdapter(new RedisMessageSubscriber(redisManager));
     }
 
     @Bean

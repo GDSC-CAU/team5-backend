@@ -28,7 +28,7 @@ public class UnReadMessageBatchScheduler {
             unReadMessageDirtySet.forEach(data -> {
                 Long userId = Long.parseLong(data.split(":")[0]);
                 Long teamId = Long.parseLong(data.split(":")[1]);
-                int unReadMessage = redisManager.getUnReadMessage(redisManager.getUnReadMessageKey(userId, teamId),
+                int unReadMessage = redisManager.getUnReadMessageOrDefault(redisManager.getUnReadMessageKey(userId, teamId),
                         () -> userTeamCheckService.findUnReadMessageByUserIdAndTeamId(userId, teamId));
                 dtos.add(UserTeamConverter.toUserTeamUnReadMessageDto(userId, teamId, unReadMessage));
             });

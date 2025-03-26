@@ -69,7 +69,7 @@ public class ChatSendService {
     private TeamListDto refreshRedisValue(final Chat chat, final Long teamId, final Long userId) {
         String inRoomKey = redisManager.getInRoomKey(userId, teamId);
         String unReadMessageKey = redisManager.getUnReadMessageKey(userId, teamId);
-        String zSetKey = redisManager.getZSetKey(userId);
+        String teamListKey = redisManager.getTeamListKey(userId);
 
         int inRoom = redisManager.getInRoomOrDefault(inRoomKey,
                 () -> userTeamCheckService.findInRoomByUserIdAndTeamId(userId, teamId));
@@ -77,10 +77,10 @@ public class ChatSendService {
             redisManager.updateUnReadMessage(unReadMessageKey);
             redisManager.updateUnReadMessageDirtySet(userId, teamId);
         }
-        redisManager.updateZSet(zSetKey, teamId, chat);
+        redisManager.updateTeamList(teamListKey, teamId, chat);
 
         return createTeamListDto(
-                teamId, chat.getText(), chat.getCreatedAt(), redisManager.getUnReadMessage(unReadMessageKey,
+                teamId, chat.getText(), chat.getCreatedAt(), redisManager.getUnReadMessageOrDefault(unReadMessageKey,
                         () -> userTeamCheckService.findUnReadMessageByUserIdAndTeamId(userId, teamId))
         );
     }

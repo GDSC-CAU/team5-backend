@@ -25,9 +25,9 @@ public class TermCacheCheckService {
     }
 
     @Cacheable(value = "findCount", key = "#word + ':' + #language.toString()")
-    public Integer findCount(final String word, final Language language) {
+    public String findCount(final String word, final Language language) {
         return Objects.requireNonNull(cacheManager.getCache("findCount"))
-                .get(word + ':' + language.toString(), Integer.class);
+                .get(word + ':' + language.toString(), String.class);
     }
 
     @Cacheable(value = "findTime", key = "#word + ':' + #language.toString()")

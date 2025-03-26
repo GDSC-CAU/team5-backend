@@ -1,6 +1,7 @@
 package org.gdsccau.team5.safebridge.domain.term.service;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.gdsccau.team5.safebridge.common.term.Language;
@@ -21,10 +22,16 @@ public class TermCacheService {
     }
 
     @CachePut(value = "findCount", key = "#word + ':' + #language.toString()")
-    public Integer updateFindCount(final String word, final Language language) {
-        Integer currentFindCount = Objects.requireNonNull(cacheManager.getCache("findCount"))
-                .get(word + ':' + language.toString(), Integer.class);
-        return currentFindCount == null ? 1 : currentFindCount + 1;
+    public String updateFindCount(final String word, final Language language) {
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMddHH");
+        String currentTime = LocalDateTime.now().format(dateTimeFormatter);
+        String currentValue = Objects.requireNonNull(cacheManager.getCache("findCount"))
+                .get(word + ":" + language.toString(), String.class);
+        int newFindCount = 1;
+        if (currentValue != null) {
+            newFindCount = Integer.parseInt(currentValue.split(":")[0]) + 1;
+        }
+        return newFindCount + ":" + currentTime;
     }
 
     @CachePut(value = "findTime", key = "#word + ':' + #language.toString()")
@@ -38,12 +45,12 @@ public class TermCacheService {
     }
 
     @CacheEvict(value = "findCount", key = "#word + ':' + #language.toString()")
-    public void deleteFindCount(final String word, final Language language) {
+    public void deleteFindCount(final String key) {
 
     }
 
-    @CacheEvict(value = "findTime", key = "#word + ':' + #language.toString()")
-    public void deleteFindTime(final String word, final Language language) {
+    @CacheEvict(value = "findTime", key = "#key")
+    public void deleteFindTime(final String key) {
 
     }
 }
