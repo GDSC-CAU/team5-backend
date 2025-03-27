@@ -11,6 +11,7 @@ import org.gdsccau.team5.safebridge.common.redis.teamlist.RedisTeamListManager;
 import org.gdsccau.team5.safebridge.common.redis.term.RedisTermManager;
 import org.gdsccau.team5.safebridge.common.redis.unreadmessage.RedisUrmManager;
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -61,8 +62,7 @@ public class RedisManager {
         return redisTeamListManager.getTeamList(teamListKey);
     }
 
-    // Hot Term의 정의에 따르면 ZSet의 모든 용어를 가져오는 것이 아니라 최근 용어만 가져온다.
-    public Set<String> getTermFindTimeZSet(final LocalDateTime findTime) {
+    public Set<ZSetOperations.TypedTuple<String>> getTermFindTimeZSet(final LocalDateTime findTime) {
         return redisTermManager.getTermFindTimeZSet(findTime);
     }
 

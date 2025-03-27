@@ -1,16 +1,16 @@
 package org.gdsccau.team5.safebridge.common.redis.term;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.gdsccau.team5.safebridge.common.redis.util.RedisUtil;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Component;
-
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.gdsccau.team5.safebridge.common.redis.util.RedisUtil;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
+import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
@@ -28,10 +28,11 @@ public class RedisTermManager {
         return chatTime.format(dateTimeFormatter);
     }
 
-    public Set<String> getTermFindTimeZSet(final LocalDateTime findTime) {
+    public Set<ZSetOperations.TypedTuple<String>> getTermFindTimeZSet(final LocalDateTime findTime) {
         Double todayScore = RedisUtil.convertToDateFormat(RedisUtil.FULL_DATE_FORMAT, findTime);
         Double yesterdayScore = RedisUtil.convertToDateFormat(RedisUtil.FULL_DATE_FORMAT, findTime.minusDays(1));
-        return redisTemplate.opsForZSet().reverseRangeByScore(getTermFindTimeZSetKey(), yesterdayScore, todayScore);
+        deleteTermFindTimeZSetOver24Hours(todayScore, yesterdayScore);
+        return redisTemplate.opsForZSet().reverseRangeByScoreWithScores(getTermFindTimeZSetKey(), yesterdayScore, todayScore);
     }
 
     public Map<Object, Object> getTermFindCount(final LocalDateTime chatTime) {
@@ -50,5 +51,9 @@ public class RedisTermManager {
         if (expireTime <= 0) {
             redisTemplate.expire(findCountHashKey, Duration.ofHours(24)); // 24시간 뒤 자동 삭제
         }
+    }
+
+    private void deleteTermFindTimeZSetOver24Hours(final Double todayScore, final Double yesterdayScore) {
+        redisTemplate.opsForZSet().removeRangeByScore(getTermFindTimeZSetKey(), todayScore, yesterdayScore - 0.0001);
     }
 }

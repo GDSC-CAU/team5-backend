@@ -1,13 +1,13 @@
 package org.gdsccau.team5.safebridge.domain.term.subscriber;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-
 import lombok.RequiredArgsConstructor;
 import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -16,26 +16,60 @@ public class RedisMessageSubscriber implements MessageListener {
 
     private final RedisManager redisManager;
 
+    @Async("threadPoolTaskExecutor")
     @Override
     public void onMessage(Message message, byte[] pattern) {
-        // TODO Redis에서 데이터를 꺼내 Hot Term을 계산하고 Local Cache에 저장한다.
+        Map<String, Double> hotTermMap = calculateHotTerm();
+
+        // TODO Local Cache에 Hot Term을 저장한다.
+    }
+
+    private Map<String, Double> calculateHotTerm() {
         LocalDateTime currentTime = LocalDateTime.now();
+        Map<String, Double> totalScoreMap = initTotalScoreMap(currentTime);
+        calculateTermFindCount(totalScoreMap, currentTime);
+        return totalScoreMap;
+    }
 
-        // 메소드 호출 날짜 ~ 어제 날짜 사이의 모든 "word:language"가 최근 순서로 저장되어 있다.
-        Set<String> termFindTimeZSet = redisManager.getTermFindTimeZSet(currentTime);
+    private Map<String, Double> getTermFindTimeMemberWithScore(final LocalDateTime currentTime) {
+        Map<String, Double> map = new HashMap<>();
+        redisManager.getTermFindTimeZSet(currentTime).forEach(tuple -> {
+            String member = tuple.getValue();
+            Double score = tuple.getScore();
+            map.put(member, score);
+        });
+        return map;
+    }
 
-        // 메소드 호출 날짜 ~ 어제 날짜 사이의 시간별 (24구간)에 대한 "word:language"의 호출 횟수
+    private Map<String, Double> initTotalScoreMap(final LocalDateTime currentTime) {
+        double findTimeWeight = 0.01; // TODO 몇으로 해야할까?
+        Map<String, Double> termFindTimeMap = getTermFindTimeMemberWithScore(currentTime);
+        Map<String, Double> totalScoreMap = new HashMap<>();
+
+        for (Map.Entry<String, Double> entry : termFindTimeMap.entrySet()) {
+            String field = entry.getKey();
+            Double lastFindTimeScore = entry.getValue();
+            totalScoreMap.putIfAbsent(field, lastFindTimeScore * findTimeWeight);
+        }
+        return totalScoreMap;
+    }
+
+    private void calculateTermFindCount(Map<String, Double> totalScoreMap, final LocalDateTime currentTime) {
+        int a = 1;
+        double r = 0.1;
+
         for (int i = 0; i < 24; i++) {
             LocalDateTime hourTime = currentTime.minusHours(i);
             Map<Object, Object> findCountHash = redisManager.getTermFindCount(hourTime);
-            findCountHash.forEach((k, v) -> {
-                String field = (String) k;
-                String word = field.split(":")[0];
-                String language = field.split(":")[1];
-                Integer count = Integer.parseInt(((String) v));
 
-                
-            });
+            for (Map.Entry<Object, Object> entry : findCountHash.entrySet()) {
+                String field = entry.getKey().toString();
+                Integer count = (Integer) entry.getValue();
+                Double countWeight = a * Math.pow(1 - r, i);
+                Double findCountScore = countWeight * count;
+
+                totalScoreMap.computeIfPresent(field, (k, v) -> v + findCountScore);
+            }
         }
     }
 }
