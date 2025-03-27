@@ -62,8 +62,8 @@ public class RedisManager {
     }
 
     // Hot Term의 정의에 따르면 ZSet의 모든 용어를 가져오는 것이 아니라 최근 용어만 가져온다.
-    public Set<String> getTermFindTimeZSet() {
-        return redisTermManager.getTermFindTimeZSet();
+    public Set<String> getTermFindTimeZSet(final LocalDateTime findTime) {
+        return redisTermManager.getTermFindTimeZSet(findTime);
     }
 
     public Map<Object, Object> getTermFindCount(final LocalDateTime chatTime) {
