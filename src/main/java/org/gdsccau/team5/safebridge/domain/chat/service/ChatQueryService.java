@@ -23,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class ChatCheckService {
+public class ChatQueryService {
 
     private final ChatRepository chatRepository;
     private final ChatCustomRepository chatCustomRepository;

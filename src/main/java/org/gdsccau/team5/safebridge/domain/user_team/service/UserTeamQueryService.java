@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class UserTeamCheckService {
+public class UserTeamQueryService {
 
     private final UserTeamRepository userTeamRepository;
 

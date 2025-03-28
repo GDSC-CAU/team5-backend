@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class TeamCheckService {
+public class TeamQueryService {
 
     private final TeamRepository teamRepository;
 

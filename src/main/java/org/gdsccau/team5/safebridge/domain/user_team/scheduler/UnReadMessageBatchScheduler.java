@@ -7,8 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.gdsccau.team5.safebridge.domain.user_team.converter.UserTeamConverter;
 import org.gdsccau.team5.safebridge.domain.user_team.dto.UserTeamDto.UserTeamUnReadMessageDto;
-import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamCheckService;
-import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamService;
+import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamQueryService;
+import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamCommandService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -16,9 +16,9 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class UnReadMessageBatchScheduler {
 
-    private final UserTeamService userTeamService;
+    private final UserTeamCommandService userTeamCommandService;
     private final RedisManager redisManager;
-    private final UserTeamCheckService userTeamCheckService;
+    private final UserTeamQueryService userTeamQueryService;
 
     @Scheduled(fixedRate = 300000) // 5분
     public void syncUnReadMessageToDB() {
@@ -29,10 +29,10 @@ public class UnReadMessageBatchScheduler {
                 Long userId = Long.parseLong(data.split(":")[0]);
                 Long teamId = Long.parseLong(data.split(":")[1]);
                 int unReadMessage = redisManager.getUnReadMessageOrDefault(redisManager.getUnReadMessageKey(userId, teamId),
-                        () -> userTeamCheckService.findUnReadMessageByUserIdAndTeamId(userId, teamId));
+                        () -> userTeamQueryService.findUnReadMessageByUserIdAndTeamId(userId, teamId));
                 dtos.add(UserTeamConverter.toUserTeamUnReadMessageDto(userId, teamId, unReadMessage));
             });
-            userTeamService.syncUnReadMessageToDB(dtos);
+            userTeamCommandService.syncUnReadMessageToDB(dtos);
             redisManager.clearUnReadMessageDirtySet(unReadMessageDirtySet);
         }
     }

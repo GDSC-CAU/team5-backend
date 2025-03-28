@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class TeamService {
+public class TeamCommandService {
 
     private final TeamRepository teamRepository;
 

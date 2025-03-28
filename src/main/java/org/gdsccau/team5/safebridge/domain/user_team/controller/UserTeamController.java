@@ -6,7 +6,6 @@ import org.gdsccau.team5.safebridge.common.code.success.UserTeamSuccessCode;
 import org.gdsccau.team5.safebridge.common.response.ApiResponse;
 import org.gdsccau.team5.safebridge.domain.team.dto.response.TeamResponseDto.TeamListDto;
 import org.gdsccau.team5.safebridge.domain.user_team.facade.UserTeamFacade;
-import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamCheckService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;

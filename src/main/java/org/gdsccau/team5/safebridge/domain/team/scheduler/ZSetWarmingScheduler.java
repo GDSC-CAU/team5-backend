@@ -3,7 +3,7 @@ package org.gdsccau.team5.safebridge.domain.team.scheduler;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.gdsccau.team5.safebridge.common.redis.RedisManager;
-import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamCheckService;
+import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamQueryService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ZSetWarmingScheduler {
 
-    private final UserTeamCheckService userTeamCheckService;
+    private final UserTeamQueryService userTeamQueryService;
     private final RedisManager redisManager;
 
     @Scheduled(fixedRate = 300000) // 5분
@@ -21,12 +21,12 @@ public class ZSetWarmingScheduler {
     }
 
     private void clearZSet() {
-        userTeamCheckService.findAllUserIdWithTeam()
+        userTeamQueryService.findAllUserIdWithTeam()
                 .forEach(userId -> redisManager.clearTeamList(redisManager.getTeamListKey(userId)));
     }
 
     private void warmingZSet() {
-        userTeamCheckService.findAllTeamOrderByLastChatTime()
+        userTeamQueryService.findAllTeamOrderByLastChatTime()
                 .forEach(data -> {
                     Long userId = data.getUserId();
                     Long teamId = data.getTeamId();

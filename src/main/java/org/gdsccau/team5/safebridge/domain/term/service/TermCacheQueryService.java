@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
-public class TermCacheCheckService {
+public class TermCacheQueryService {
 
     private final CacheManager cacheManager;
 

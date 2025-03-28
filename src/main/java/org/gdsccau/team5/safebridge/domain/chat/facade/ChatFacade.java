@@ -16,19 +16,19 @@ import org.gdsccau.team5.safebridge.domain.chat.dto.request.ChatRequestDto.ChatM
 import org.gdsccau.team5.safebridge.domain.chat.dto.response.ChatResponseDto.ChatMessageWithIsReadResponseDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.response.ChatResponseDto.WorkResponseDto;
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
-import org.gdsccau.team5.safebridge.domain.chat.service.ChatCheckService;
+import org.gdsccau.team5.safebridge.domain.chat.service.ChatQueryService;
 import org.gdsccau.team5.safebridge.domain.chat.service.ChatSendService;
-import org.gdsccau.team5.safebridge.domain.chat.service.ChatService;
+import org.gdsccau.team5.safebridge.domain.chat.service.ChatCommandService;
 import org.gdsccau.team5.safebridge.domain.team.entity.Team;
-import org.gdsccau.team5.safebridge.domain.team.service.TeamCheckService;
-import org.gdsccau.team5.safebridge.domain.term.service.TermCheckService;
-import org.gdsccau.team5.safebridge.domain.term.service.TermMetaDataService;
-import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermCheckService;
+import org.gdsccau.team5.safebridge.domain.team.service.TeamQueryService;
+import org.gdsccau.team5.safebridge.domain.term.service.TermQueryService;
+import org.gdsccau.team5.safebridge.domain.term.service.TermMetaDataCommandService;
+import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermQueryService;
 import org.gdsccau.team5.safebridge.domain.user.dto.UserDto.UserIdAndLanguageDto;
 import org.gdsccau.team5.safebridge.domain.user.entity.User;
 import org.gdsccau.team5.safebridge.domain.user.enums.Role;
-import org.gdsccau.team5.safebridge.domain.user.service.UserCheckService;
-import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamCheckService;
+import org.gdsccau.team5.safebridge.domain.user.service.UserQueryService;
+import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamQueryService;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,15 +39,15 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class ChatFacade {
 
-    private final ChatService chatService;
+    private final ChatCommandService chatCommandService;
     private final ChatSendService chatSendService;
-    private final ChatCheckService chatCheckService;
-    private final TeamCheckService teamCheckService;
-    private final UserCheckService userCheckService;
-    private final UserTeamCheckService userTeamCheckService;
-    private final TermCheckService termCheckService;
-    private final TermMetaDataService termMetaDataService;
-    private final TranslatedTermCheckService translatedTermCheckService;
+    private final ChatQueryService chatQueryService;
+    private final TeamQueryService teamQueryService;
+    private final UserQueryService userQueryService;
+    private final UserTeamQueryService userTeamQueryService;
+    private final TermQueryService termQueryService;
+    private final TermMetaDataCommandService termMetaDataCommandService;
+    private final TranslatedTermQueryService translatedTermQueryService;
     private final TermManager termManager;
 
     public void chat(final ChatMessageRequestDto chatRequestDto, final Long teamId, final Chat chat) {
@@ -55,9 +55,9 @@ public class ChatFacade {
         chatSendService.sendChatMessage(result, chatRequestDto.getName(), chat, teamId); // 채팅은 즉시 전송
 
         // 채팅방에 속한 모든 사용자의 Id와 언어 가져오기
-        List<UserIdAndLanguageDto> dtos = userTeamCheckService.findAllUserIdAndLanguageByTeamId(teamId);
+        List<UserIdAndLanguageDto> dtos = userTeamQueryService.findAllUserIdAndLanguageByTeamId(teamId);
         // 현장용어를 위한 Local Cache 업데이트
-        termMetaDataService.updateTermMetaDataInLocalCache(result.getTerms(), getLanguageSet(dtos), chat.getCreatedAt());
+        termMetaDataCommandService.updateTermMetaDataInLocalCache(result.getTerms(), getLanguageSet(dtos), chat.getCreatedAt());
 
         // 채팅방에 속한 모든 사용자에 대해 번역 데이터를 전송하고 채팅방 순서를 갱신한다.
         dtos.forEach(dto -> {
@@ -69,17 +69,17 @@ public class ChatFacade {
 
     @Transactional
     public Chat createChat(final ChatMessageRequestDto chatRequestDto, final Long teamId) {
-        User user = userCheckService.findByUserId(chatRequestDto.getUserId());
-        Team team = teamCheckService.findByTeamId(teamId);
-        return chatService.createChat(chatRequestDto, user, team);
+        User user = userQueryService.findByUserId(chatRequestDto.getUserId());
+        Team team = teamQueryService.findByTeamId(teamId);
+        return chatCommandService.createChat(chatRequestDto, user, team);
     }
 
     public Map<String, Object> findAllChats(final String role, final Long cursorId, final Long userId,
                                             final Long teamId) {
-        Language language = userCheckService.findLanguageByUserId(userId);
-        Slice<ChatMessageWithIsReadResponseDto> chatSlice = chatCheckService.findAllChatsByTeamId(Role.valueOf(role),
+        Language language = userQueryService.findLanguageByUserId(userId);
+        Slice<ChatMessageWithIsReadResponseDto> chatSlice = chatQueryService.findAllChatsByTeamId(Role.valueOf(role),
                 cursorId, teamId, language);
-        LocalDateTime accessDate = userTeamCheckService.findAccessDateByUserIdAndTeamId(userId, teamId);
+        LocalDateTime accessDate = userTeamQueryService.findAccessDateByUserIdAndTeamId(userId, teamId);
         for (ChatMessageWithIsReadResponseDto chatMessage : chatSlice.getContent()) {
             chatMessage.setRead(chatMessage.getSendTime().isBefore(accessDate));
             // 메시지에 포함된 {현장용어 : 번역용어} 쌍 담아서 보내기
@@ -89,8 +89,8 @@ public class ChatFacade {
                         .map(TermDataDto::getTerm)
                         .toList();
                 for (String word : words) {
-                    Long termId = termCheckService.findTermIdByWord(word);
-                    String translatedWord = translatedTermCheckService.findTranslatedTermByLanguageAndTermId(language,
+                    Long termId = termQueryService.findTermIdByWord(word);
+                    String translatedWord = translatedTermQueryService.findTranslatedTermByLanguageAndTermId(language,
                             termId);
                     wordZip.put(word, translatedWord);
                 }
@@ -104,8 +104,8 @@ public class ChatFacade {
     }
 
     public List<WorkResponseDto> findAllWorks(final Long userId) {
-        List<Long> teamIds = userTeamCheckService.findAllTeamIdByUserId(userId);
-        return chatCheckService.findAllWorks(teamIds);
+        List<Long> teamIds = userTeamQueryService.findAllTeamIdByUserId(userId);
+        return chatQueryService.findAllWorks(teamIds);
     }
 
     private Set<Language> getLanguageSet(final List<UserIdAndLanguageDto> dtos) {

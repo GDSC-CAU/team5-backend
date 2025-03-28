@@ -7,16 +7,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.term.Language;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataDto;
-import org.springframework.cache.CacheManager;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class TermMetaDataService {
+public class TermMetaDataCommandService {
 
-    private final TermCacheService termCacheService;
+    private final TermCacheCommandService termCacheCommandService;
 
     @Async("threadPoolTaskExecutor")
     public void updateTermMetaDataInLocalCache(final List<TermDataDto> terms, final Set<Language> languageSet,
@@ -24,8 +23,8 @@ public class TermMetaDataService {
         terms.forEach(dto -> {
             languageSet.forEach(language -> {
                 String word = dto.getTerm();
-                termCacheService.updateFindCount(word, language);
-                termCacheService.updateFindTime(word, language, chatTime);
+                termCacheCommandService.updateFindCount(word, language);
+                termCacheCommandService.updateFindTime(word, language, chatTime);
             });
         });
     }

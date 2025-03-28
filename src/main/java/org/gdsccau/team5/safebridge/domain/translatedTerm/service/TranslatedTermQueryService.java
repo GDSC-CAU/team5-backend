@@ -1,6 +1,5 @@
 package org.gdsccau.team5.safebridge.domain.translatedTerm.service;
 
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.term.Language;
@@ -10,7 +9,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class TranslatedTermCheckService {
+public class TranslatedTermQueryService {
 
     private final TranslatedTermRepository translatedTermRepository;
 

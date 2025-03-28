@@ -16,9 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class UserTeamService {
+public class UserTeamCommandService {
 
-    private final UserTeamCheckService userTeamCheckService;
+    private final UserTeamQueryService userTeamQueryService;
     private final UserTeamRepository userTeamRepository;
     private final UserTeamBatchRepository userTeamBatchRepository;
 
@@ -36,19 +36,19 @@ public class UserTeamService {
 
     @Transactional
     public void updateAccessDate(final Long userId, final Long teamId) {
-        UserTeam userTeam = userTeamCheckService.findUserTeamByUserIdAndTeamId(userId, teamId);
+        UserTeam userTeam = userTeamQueryService.findUserTeamByUserIdAndTeamId(userId, teamId);
         userTeam.updateAccessDate();
     }
 
     @Transactional
     public void updateInRoomWhenJoin(final Long userId, final Long teamId) {
-        UserTeam userTeam = userTeamCheckService.findUserTeamByUserIdAndTeamId(userId, teamId);
+        UserTeam userTeam = userTeamQueryService.findUserTeamByUserIdAndTeamId(userId, teamId);
         userTeam.updateInRoomWhenJoin();
     }
 
     @Transactional
     public void updateInRoomWhenLeave(final Long userId, final Long teamId) {
-        UserTeam userTeam = userTeamCheckService.findUserTeamByUserIdAndTeamId(userId, teamId);
+        UserTeam userTeam = userTeamQueryService.findUserTeamByUserIdAndTeamId(userId, teamId);
         userTeam.updateInRoomWhenLeave();
     }
 

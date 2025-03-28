@@ -7,16 +7,14 @@ import org.gdsccau.team5.safebridge.domain.chat.dto.request.ChatRequestDto.ChatM
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
 import org.gdsccau.team5.safebridge.domain.chat.repository.ChatRepository;
 import org.gdsccau.team5.safebridge.domain.team.entity.Team;
-import org.gdsccau.team5.safebridge.domain.team.service.TeamCheckService;
 import org.gdsccau.team5.safebridge.domain.user.entity.User;
-import org.gdsccau.team5.safebridge.domain.user.service.UserCheckService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class ChatService {
+public class ChatCommandService {
 
     private final ChatRepository chatRepository;
 

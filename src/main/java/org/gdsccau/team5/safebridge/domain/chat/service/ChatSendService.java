@@ -1,8 +1,6 @@
 package org.gdsccau.team5.safebridge.domain.chat.service;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import lombok.RequiredArgsConstructor;
@@ -11,19 +9,13 @@ import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.gdsccau.team5.safebridge.common.term.Language;
 import org.gdsccau.team5.safebridge.common.term.TermManager;
 import org.gdsccau.team5.safebridge.domain.chat.converter.ChatConverter;
-import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataWithNewChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TranslatedDataDto;
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
 import org.gdsccau.team5.safebridge.domain.team.dto.response.TeamResponseDto.TeamListDto;
-import org.gdsccau.team5.safebridge.domain.team.service.TeamCheckService;
-import org.gdsccau.team5.safebridge.domain.term.entity.Term;
-import org.gdsccau.team5.safebridge.domain.term.service.TermCheckService;
-import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermCheckService;
-import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermService;
-import org.gdsccau.team5.safebridge.domain.translation.service.TranslationCheckService;
-import org.gdsccau.team5.safebridge.domain.translation.service.TranslationService;
-import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamCheckService;
+import org.gdsccau.team5.safebridge.domain.team.service.TeamQueryService;
+import org.gdsccau.team5.safebridge.domain.translation.service.TranslationCommandService;
+import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamQueryService;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -36,9 +28,9 @@ public class ChatSendService {
     private static final String TEAMS_SUB_URL = "/sub/teams/";
     private static final String TRANSLATE_SUB_URL = "/sub/translate/";
 
-    private final TranslationService translationService;
-    private final TeamCheckService teamCheckService;
-    private final UserTeamCheckService userTeamCheckService;
+    private final TranslationCommandService translationCommandService;
+    private final TeamQueryService teamQueryService;
+    private final UserTeamQueryService userTeamQueryService;
     private final SimpMessagingTemplate messagingTemplate;
     private final TermManager termManager;
     private final RedisManager redisManager;
@@ -53,7 +45,7 @@ public class ChatSendService {
                                       final Long teamId, final Long userId) {
         CompletableFuture<TranslatedDataDto> translatedText = termManager.translate(result.getNewChat(), result.getTerms(), language);
         translatedText.thenAccept(dto -> {
-            translationService.createTranslation(dto.getTranslatedText(), language, chat.getId());
+            translationCommandService.createTranslation(dto.getTranslatedText(), language, chat.getId());
             messagingTemplate.convertAndSend(TRANSLATE_SUB_URL + teamId + "/" + userId,
                     ChatConverter.toTranslatedTextResponseDto(dto.getTranslatedText(), dto.getTranslatedTerms(),
                             chat.getId()));
@@ -72,7 +64,7 @@ public class ChatSendService {
         String teamListKey = redisManager.getTeamListKey(userId);
 
         int inRoom = redisManager.getInRoomOrDefault(inRoomKey,
-                () -> userTeamCheckService.findInRoomByUserIdAndTeamId(userId, teamId));
+                () -> userTeamQueryService.findInRoomByUserIdAndTeamId(userId, teamId));
         if (inRoom == 0) {
             redisManager.updateUnReadMessage(unReadMessageKey);
             redisManager.updateUnReadMessageDirtySet(userId, teamId);
@@ -81,7 +73,7 @@ public class ChatSendService {
 
         return createTeamListDto(
                 teamId, chat.getText(), chat.getCreatedAt(), redisManager.getUnReadMessageOrDefault(unReadMessageKey,
-                        () -> userTeamCheckService.findUnReadMessageByUserIdAndTeamId(userId, teamId))
+                        () -> userTeamQueryService.findUnReadMessageByUserIdAndTeamId(userId, teamId))
         );
     }
 
@@ -89,11 +81,11 @@ public class ChatSendService {
                                           final LocalDateTime lastChatTime, final int unReadMessage) {
         return TeamListDto.builder()
                 .teamId(teamId)
-                .teamName(teamCheckService.findNameByTeamId(teamId))
+                .teamName(teamQueryService.findNameByTeamId(teamId))
                 .lastChat(lastChat)
                 .lastChatTime(lastChatTime)
                 .unReadMessage(unReadMessage)
-                .numberOfUsers(userTeamCheckService.countNumOfUsersByTeamId(teamId))
+                .numberOfUsers(userTeamQueryService.countNumOfUsersByTeamId(teamId))
                 .build();
     }
 }

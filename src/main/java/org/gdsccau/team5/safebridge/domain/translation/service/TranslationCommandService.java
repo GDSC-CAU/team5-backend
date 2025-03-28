@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.term.Language;
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
-import org.gdsccau.team5.safebridge.domain.chat.service.ChatCheckService;
+import org.gdsccau.team5.safebridge.domain.chat.service.ChatQueryService;
 import org.gdsccau.team5.safebridge.domain.translation.TranslationRepository;
 import org.gdsccau.team5.safebridge.domain.translation.entity.Translation;
 import org.springframework.stereotype.Service;
@@ -14,13 +14,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @RequiredArgsConstructor
 @Transactional
-public class TranslationService {
+public class TranslationCommandService {
 
-    private final ChatCheckService chatCheckService;
+    private final ChatQueryService chatQueryService;
     private final TranslationRepository translationRepository;
 
     public void createTranslation(final String text, final Language language, final Long chatId) {
-        Chat chat = chatCheckService.findChatById(chatId);
+        Chat chat = chatQueryService.findChatById(chatId);
         Translation translation = Translation.builder()
                 .text(text)
                 .language(language)

@@ -17,24 +17,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
 import org.ahocorasick.trie.Emit;
 import org.ahocorasick.trie.Trie;
 import org.ahocorasick.trie.Trie.TrieBuilder;
-import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataWithNewChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TranslatedDataDto;
 import org.gdsccau.team5.safebridge.domain.term.entity.Term;
-import org.gdsccau.team5.safebridge.domain.term.service.TermCacheCheckService;
-import org.gdsccau.team5.safebridge.domain.term.service.TermCacheService;
-import org.gdsccau.team5.safebridge.domain.term.service.TermCheckService;
-import org.gdsccau.team5.safebridge.domain.term.service.TermService;
-import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermCheckService;
-import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermService;
+import org.gdsccau.team5.safebridge.domain.term.service.TermCacheQueryService;
+import org.gdsccau.team5.safebridge.domain.term.service.TermCacheCommandService;
+import org.gdsccau.team5.safebridge.domain.term.service.TermQueryService;
+import org.gdsccau.team5.safebridge.domain.term.service.TermCommandService;
+import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermQueryService;
+import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermCommandService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -68,20 +66,20 @@ public class TermManager {
 
     private static final String SOURCE_LANGUAGE_CODE = "ko";
 
-    private final TermCheckService termCheckService;
-    private final TermCacheService termCacheService;
-    private final TermCacheCheckService termCacheCheckService;
-    private final TermService termService;
-    private final TranslatedTermCheckService translatedTermCheckService;
-    private final TranslatedTermService translatedTermService;
+    private final TermQueryService termQueryService;
+    private final TermCacheCommandService termCacheCommandService;
+    private final TermCacheQueryService termCacheQueryService;
+    private final TermCommandService termCommandService;
+    private final TranslatedTermQueryService translatedTermQueryService;
+    private final TranslatedTermCommandService translatedTermCommandService;
 
     private final Trie trie;
     private final Map<String, String> termsWithMeaning;
 
-    public TermManager(final TermCheckService termCheckService,
-                       final TermCacheService termCacheService, final TermCacheCheckService termCacheCheckService,
-                       final TermService termService, final TranslatedTermCheckService translatedTermCheckService,
-                       final TranslatedTermService translatedTermService) {
+    public TermManager(final TermQueryService termQueryService,
+                       final TermCacheCommandService termCacheCommandService, final TermCacheQueryService termCacheQueryService,
+                       final TermCommandService termCommandService, final TranslatedTermQueryService translatedTermQueryService,
+                       final TranslatedTermCommandService translatedTermCommandService) {
         Set<String> terms = TermLoader.loadTermsOnly();
         TrieBuilder builder = Trie.builder();
         for (String term : terms) {
@@ -89,12 +87,12 @@ public class TermManager {
         }
         this.trie = builder.build();
         this.termsWithMeaning = TermLoader.loadTermsWithMeaning();
-        this.termCheckService = termCheckService;
-        this.termCacheService = termCacheService;
-        this.termCacheCheckService = termCacheCheckService;
-        this.termService = termService;
-        this.translatedTermCheckService = translatedTermCheckService;
-        this.translatedTermService = translatedTermService;
+        this.termQueryService = termQueryService;
+        this.termCacheCommandService = termCacheCommandService;
+        this.termCacheQueryService = termCacheQueryService;
+        this.termCommandService = termCommandService;
+        this.translatedTermQueryService = translatedTermQueryService;
+        this.translatedTermCommandService = translatedTermCommandService;
     }
 
     public TermDataWithNewChatDto query(final String chat) {
@@ -149,21 +147,21 @@ public class TermManager {
         // TODO 이미 현장 용어에 대해 번역을 했는지 확인하고 안 했으면 Local Cache -> DB를 순서대로 조회해서 가져온다.
         Map<String, String> result = new HashMap<>();
         termDataDtos.forEach(termDataDto -> {
-            String wordAndTWord = termCacheCheckService.findTerm(termDataDto.getTerm(), language);
+            String wordAndTWord = termCacheQueryService.findTerm(termDataDto.getTerm(), language);
             String translatedTerm = null;
             if (wordAndTWord != null) {
                 translatedTerm = wordAndTWord.split(":")[1];
             } else {
-                Term term = termCheckService.findTermByWord(termDataDto.getTerm());
+                Term term = termQueryService.findTermByWord(termDataDto.getTerm());
                 if (term != null) {
-                    translatedTerm = translatedTermCheckService.findTranslatedTermByLanguageAndTermId(language, term.getId());
+                    translatedTerm = translatedTermQueryService.findTranslatedTermByLanguageAndTermId(language, term.getId());
                 } else {
                     Translation translation = translate.translate(termDataDto.getMeaning(),
                             Translate.TranslateOption.sourceLanguage(SOURCE_LANGUAGE_CODE),
                             Translate.TranslateOption.targetLanguage(language.getCode()));
                     translatedTerm = translation.getTranslatedText().replaceAll("&#39;", "'");
-                    term = termService.createTerm(termDataDto.getTerm(), termDataDto.getMeaning());
-                    translatedTermService.createTranslatedTerm(term, language, translatedTerm);
+                    term = termCommandService.createTerm(termDataDto.getTerm(), termDataDto.getMeaning());
+                    translatedTermCommandService.createTranslatedTerm(term, language, translatedTerm);
                 }
             }
             result.put(termDataDto.getTerm(), translatedTerm);
