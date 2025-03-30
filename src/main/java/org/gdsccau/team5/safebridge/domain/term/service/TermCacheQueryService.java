@@ -3,7 +3,6 @@ package org.gdsccau.team5.safebridge.domain.term.service;
 import com.github.benmanes.caffeine.cache.Cache;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.gdsccau.team5.safebridge.common.term.Language;
 import org.springframework.cache.CacheManager;
@@ -18,22 +17,9 @@ public class TermCacheQueryService {
 
     private final CacheManager cacheManager;
 
-    @Cacheable(value = "term", key = "#word + ':' + #language.toString()")
+    @Cacheable(value = "term", key = "#word + ':' + #language.name()")
     public String findTerm(final String word, final Language language) {
-        return Objects.requireNonNull(cacheManager.getCache("term"))
-                .get(word + ':' + language.toString(), String.class);
-    }
-
-    @Cacheable(value = "findCount", key = "#word + ':' + #language.toString()")
-    public String findCount(final String word, final Language language) {
-        return Objects.requireNonNull(cacheManager.getCache("findCount"))
-                .get(word + ':' + language.toString(), String.class);
-    }
-
-    @Cacheable(value = "findTime", key = "#word + ':' + #language.toString()")
-    public String findTime(final String word, final Language language) {
-        return Objects.requireNonNull(cacheManager.getCache("findTime"))
-                .get(word + ':' + language.toString(), String.class);
+        return null;
     }
 
     public Map<Object, Object> getAllKeyAndValueInCache(final String cacheName) {

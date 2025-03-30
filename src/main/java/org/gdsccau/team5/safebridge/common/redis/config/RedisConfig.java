@@ -1,7 +1,7 @@
 package org.gdsccau.team5.safebridge.common.redis.config;
 
 import org.gdsccau.team5.safebridge.common.redis.RedisManager;
-import org.gdsccau.team5.safebridge.domain.term.subscriber.RedisMessageSubscriber;
+import org.gdsccau.team5.safebridge.common.redis.subscriber.RedisMessageSubscriber;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -5,7 +5,6 @@ import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.translate.Translate;
 import com.google.cloud.translate.TranslateOptions;
 import com.google.cloud.translate.Translation;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,7 +17,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-
 import lombok.extern.slf4j.Slf4j;
 import org.ahocorasick.trie.Emit;
 import org.ahocorasick.trie.Trie;
@@ -27,12 +25,12 @@ import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataWithNewChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TranslatedDataDto;
 import org.gdsccau.team5.safebridge.domain.term.entity.Term;
-import org.gdsccau.team5.safebridge.domain.term.service.TermCacheQueryService;
 import org.gdsccau.team5.safebridge.domain.term.service.TermCacheCommandService;
-import org.gdsccau.team5.safebridge.domain.term.service.TermQueryService;
+import org.gdsccau.team5.safebridge.domain.term.service.TermCacheQueryService;
 import org.gdsccau.team5.safebridge.domain.term.service.TermCommandService;
-import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermQueryService;
+import org.gdsccau.team5.safebridge.domain.term.service.TermQueryService;
 import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermCommandService;
+import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermQueryService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -77,8 +75,10 @@ public class TermManager {
     private final Map<String, String> termsWithMeaning;
 
     public TermManager(final TermQueryService termQueryService,
-                       final TermCacheCommandService termCacheCommandService, final TermCacheQueryService termCacheQueryService,
-                       final TermCommandService termCommandService, final TranslatedTermQueryService translatedTermQueryService,
+                       final TermCacheCommandService termCacheCommandService,
+                       final TermCacheQueryService termCacheQueryService,
+                       final TermCommandService termCommandService,
+                       final TranslatedTermQueryService translatedTermQueryService,
                        final TranslatedTermCommandService translatedTermCommandService) {
         Set<String> terms = TermLoader.loadTermsOnly();
         TrieBuilder builder = Trie.builder();
@@ -147,14 +147,12 @@ public class TermManager {
         // TODO 이미 현장 용어에 대해 번역을 했는지 확인하고 안 했으면 Local Cache -> DB를 순서대로 조회해서 가져온다.
         Map<String, String> result = new HashMap<>();
         termDataDtos.forEach(termDataDto -> {
-            String wordAndTWord = termCacheQueryService.findTerm(termDataDto.getTerm(), language);
-            String translatedTerm = null;
-            if (wordAndTWord != null) {
-                translatedTerm = wordAndTWord.split(":")[1];
-            } else {
+            String translatedTerm = termCacheQueryService.findTerm(termDataDto.getTerm(), language);
+            if (translatedTerm == null) {
                 Term term = termQueryService.findTermByWord(termDataDto.getTerm());
                 if (term != null) {
-                    translatedTerm = translatedTermQueryService.findTranslatedTermByLanguageAndTermId(language, term.getId());
+                    translatedTerm = translatedTermQueryService.findTranslatedWordByLanguageAndTermId(language,
+                            term.getId());
                 } else {
                     Translation translation = translate.translate(termDataDto.getMeaning(),
                             Translate.TranslateOption.sourceLanguage(SOURCE_LANGUAGE_CODE),

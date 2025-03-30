@@ -20,7 +20,7 @@ public class HotTermScheduler {
     private final TermCacheCommandService termCacheCommandService;
     private final TermCacheQueryService termCacheQueryService;
 
-    @Scheduled(fixedRate = 300000)
+    @Scheduled(fixedRate = 36000000) // 1시간
     public void hotTermUpdate() {
         // 1. Local Cache에 저장된 누적 호출 횟수, 최근 호출 시각을 가져온다.
         Map<Object, Object> cacheEntriesForTime = termCacheQueryService.getAllKeyAndValueInCache(

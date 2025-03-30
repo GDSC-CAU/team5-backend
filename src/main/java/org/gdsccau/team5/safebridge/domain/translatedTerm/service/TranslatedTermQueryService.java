@@ -13,8 +13,8 @@ public class TranslatedTermQueryService {
 
     private final TranslatedTermRepository translatedTermRepository;
 
-    public String findTranslatedTermByLanguageAndTermId(final Language language, final Long termId) {
-        return translatedTermRepository.findTranslatedTermByLanguageAndTermId(language, termId).orElse(null);
+    public String findTranslatedWordByLanguageAndTermId(final Language language, final Long termId) {
+        return translatedTermRepository.findTranslatedWordByLanguageAndTermId(language, termId).orElse(null);
     }
 
     public Boolean isTranslatedTermExists(final Language language, final Long termId) {

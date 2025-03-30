@@ -16,13 +16,13 @@ import org.gdsccau.team5.safebridge.domain.chat.dto.request.ChatRequestDto.ChatM
 import org.gdsccau.team5.safebridge.domain.chat.dto.response.ChatResponseDto.ChatMessageWithIsReadResponseDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.response.ChatResponseDto.WorkResponseDto;
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
+import org.gdsccau.team5.safebridge.domain.chat.service.ChatCommandService;
 import org.gdsccau.team5.safebridge.domain.chat.service.ChatQueryService;
 import org.gdsccau.team5.safebridge.domain.chat.service.ChatSendService;
-import org.gdsccau.team5.safebridge.domain.chat.service.ChatCommandService;
 import org.gdsccau.team5.safebridge.domain.team.entity.Team;
 import org.gdsccau.team5.safebridge.domain.team.service.TeamQueryService;
-import org.gdsccau.team5.safebridge.domain.term.service.TermQueryService;
 import org.gdsccau.team5.safebridge.domain.term.service.TermMetaDataCommandService;
+import org.gdsccau.team5.safebridge.domain.term.service.TermQueryService;
 import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermQueryService;
 import org.gdsccau.team5.safebridge.domain.user.dto.UserDto.UserIdAndLanguageDto;
 import org.gdsccau.team5.safebridge.domain.user.entity.User;
@@ -56,8 +56,6 @@ public class ChatFacade {
 
         // 채팅방에 속한 모든 사용자의 Id와 언어 가져오기
         List<UserIdAndLanguageDto> dtos = userTeamQueryService.findAllUserIdAndLanguageByTeamId(teamId);
-        // 현장용어를 위한 Local Cache 업데이트
-        termMetaDataCommandService.updateTermMetaDataInLocalCache(result.getTerms(), getLanguageSet(dtos), chat.getCreatedAt());
 
         // 채팅방에 속한 모든 사용자에 대해 번역 데이터를 전송하고 채팅방 순서를 갱신한다.
         dtos.forEach(dto -> {
@@ -65,6 +63,9 @@ public class ChatFacade {
             chatSendService.sendTranslatedMessage(result, language, chat, teamId, dto.getUserId());
             chatSendService.sendTeamData(chat, teamId, dto.getUserId());
         });
+
+        // 현장용어를 위한 Local Cache 업데이트
+        termMetaDataCommandService.updateTermMetaDataInLocalCache(result.getTerms(), getLanguageSet(dtos), chat.getCreatedAt());
     }
 
     @Transactional
@@ -90,7 +91,7 @@ public class ChatFacade {
                         .toList();
                 for (String word : words) {
                     Long termId = termQueryService.findTermIdByWord(word);
-                    String translatedWord = translatedTermQueryService.findTranslatedTermByLanguageAndTermId(language,
+                    String translatedWord = translatedTermQueryService.findTranslatedWordByLanguageAndTermId(language,
                             termId);
                     wordZip.put(word, translatedWord);
                 }
