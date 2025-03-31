@@ -83,7 +83,7 @@ LinguaTalk은 다국적 노동자들이 한국에 와서 일을 하며 겪는 �
 <img src="https://img.shields.io/badge/React-61DAFB?style=flat&logo=React&logoColor=white"/> <img src="https://img.shields.io/badge/ESLint-4B32C3?style=flat&logo=ESLint&logoColor=white"/> <img src="https://img.shields.io/badge/Prettier-F7B93E?style=flat&logo=Prettier&logoColor=white"/> <img src="https://img.shields.io/badge/Axios-5A29E4?style=flat&logo=Axios&logoColor=white"/>
 
 
-<img src="https://img.shields.io/badge/Spring Boot-6DB33F?style=flat&logo=SpringBoot&logoColor=white" /> <img src="https://img.shields.io/badge/MySQL-4479A1?style=flat&logo=MySQL&logoColor=white" /> <img src="https://img.shields.io/badge/Redis-FF4438?style=flat&logo=Redis&logoColor=white" /> <img src="https://img.shields.io/badge/Docker-2496ED?style=flat&logo=Docker&logoColor=white" /> <img src="https://img.shields.io/badge/GithubActions-2088FF?style=flat&logo=GithubActions&logoColor=white" /> <img src="https://img.shields.io/badge/NGINX-009639?style=flat&logo=NGINX&logoColor=white" /> 
+<img src="https://img.shields.io/badge/Spring Boot-6DB33F?style=flat&logo=SpringBoot&logoColor=white" /> <img src="https://img.shields.io/badge/MySQL-4479A1?style=flat&logo=MySQL&logoColor=white" /> <img src="https://img.shields.io/badge/Redis-FF4438?style=flat&logo=Redis&logoColor=white" /> <img src="https://img.shields.io/badge/Docker-2496ED?style=flat&logo=Docker&logoColor=white" /> <img src="https://img.shields.io/badge/GithubActions-2088FF?style=flat&logo=GithubActions&logoColor=white" /> <img src="https://img.shields.io/badge/NGINX-009639?style=flat&logo=NGINX&logoColor=white" /> <img src="https://img.shields.io/badge/Amazon%20Web%20Services-232F3E?style=flat&logo=Amazon%20Web%20Services&logoColor=white"/>
 
 
 ### 협업  
