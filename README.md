@@ -1,5 +1,5 @@
 ## GDGoC-CAU Project Team05
-<img width="70%" alt="스크린샷 2025-03-31 오후 10 12 19" src="https://github.com/user-attachments/assets/c45ae4fe-ae90-4dcd-9aff-da78b7d201e5" />
+<img width="100%" alt="스크린샷 2025-03-31 오후 10 12 19" src="https://github.com/user-attachments/assets/c45ae4fe-ae90-4dcd-9aff-da78b7d201e5" />
 
 ## 👀 팀원
 
