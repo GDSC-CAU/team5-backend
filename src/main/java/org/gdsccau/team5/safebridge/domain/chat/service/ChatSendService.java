@@ -93,7 +93,7 @@ public class ChatSendService {
         );
     }
 
-    // TODO 서버가 꺼지면 중복 저장이 됩니다 ㅎㅎ..
+    // TODO 서버가 꺼지면 중복 저장이 됩니다 ㅎㅎ.. 1. UPSERT, 2. Redis, 3. exist 쿼리
     private void createTranslatedTerm(final Language language, final DecideToCreateTermEntityDto data) {
         String isNewTermKey = language + ":" + data.getWord();
         if (decideIsNewSet.add(isNewTermKey)) {

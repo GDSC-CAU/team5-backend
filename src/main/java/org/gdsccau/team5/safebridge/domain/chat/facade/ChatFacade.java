@@ -112,6 +112,7 @@ public class ChatFacade {
                 .forEach(dto -> {
                     String word = dto.getTerm();
                     String meaning = dto.getMeaning();
+                    // TODO UPSERT가 더 좋을까?
                     if (!termQueryService.existsByWord(word)) {
                         termCommandService.createTerm(word, meaning);
                     }
@@ -140,13 +141,11 @@ public class ChatFacade {
         Map<Long, String> termIdAndWordMap = getTermIdAndWordMap(termIdAndWordDtos);
         List<Long> termIds = getTermIds(termIdAndWordDtos);
 
-        // TODO termId는 잘 가져옴. 이게 못 가져옴, 아 Language 이상하게 저장되지
         translatedTermQueryService.findTranslatedWordsByLanguageAndTermIds(language, termIds)
                 .forEach(dto -> {
                     String translatedWord = dto.getTranslatedWord();
                     Long termId = dto.getTermId();
                     String word = termIdAndWordMap.get(termId);
-                    log.info("{}", translatedWord);
                     wordZip.put(word, translatedWord);
                 });
         return wordZip;
