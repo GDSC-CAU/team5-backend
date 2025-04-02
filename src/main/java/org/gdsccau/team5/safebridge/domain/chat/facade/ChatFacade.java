@@ -140,7 +140,7 @@ public class ChatFacade {
         Map<Long, String> termIdAndWordMap = getTermIdAndWordMap(termIdAndWordDtos);
         List<Long> termIds = getTermIds(termIdAndWordDtos);
 
-        // TODO termId는 잘 가져옴. 이게 못 가져옴
+        // TODO termId는 잘 가져옴. 이게 못 가져옴, 아 Language 이상하게 저장되지
         translatedTermQueryService.findTranslatedWordsByLanguageAndTermIds(language, termIds)
                 .forEach(dto -> {
                     String translatedWord = dto.getTranslatedWord();

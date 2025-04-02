@@ -12,14 +12,6 @@ import org.springframework.data.repository.query.Param;
 
 public interface TranslatedTermRepository extends JpaRepository<TranslatedTerm, Long> {
 
-    @Modifying
-    @Query(value = "INSERT INTO translated_term (language, word, term_id) "
-            + "VALUES (:language, :word, :termId) "
-            + "ON DUPLICATE KEY UPDATE word = VALUES(word)", nativeQuery = true)
-    void upsertTranslatedTerm(@Param("language") Language language,
-                              @Param("word") String word,
-                              @Param("termId") Long termId);
-
     @Query("SELECT tt.word FROM TranslatedTerm tt WHERE tt.language = :language AND tt.term.id = :termId")
     Optional<String> findTranslatedWordByLanguageAndTermId(@Param("language") final Language language, @Param("termId") final Long termId);
 
