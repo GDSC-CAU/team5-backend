@@ -1,4 +1,4 @@
-package org.gdsccau.team5.safebridge.domain.user_team.facade;
+package org.gdsccau.team5.safebridge.domain.userTeam.facade;
 
 import java.util.List;
 import java.util.Objects;
@@ -8,8 +8,8 @@ import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.ChatMetaDataDto;
 import org.gdsccau.team5.safebridge.domain.chat.service.ChatQueryService;
 import org.gdsccau.team5.safebridge.domain.team.dto.response.TeamResponseDto.TeamListDto;
 import org.gdsccau.team5.safebridge.domain.team.service.TeamQueryService;
-import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamQueryService;
-import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamCommandService;
+import org.gdsccau.team5.safebridge.domain.userTeam.service.UserTeamQueryService;
+import org.gdsccau.team5.safebridge.domain.userTeam.service.UserTeamCommandService;
 import org.springframework.stereotype.Component;
 
 @Component

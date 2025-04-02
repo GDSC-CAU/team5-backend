@@ -1,4 +1,4 @@
-package org.gdsccau.team5.safebridge.domain.user_team.dto;
+package org.gdsccau.team5.safebridge.domain.userTeam.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

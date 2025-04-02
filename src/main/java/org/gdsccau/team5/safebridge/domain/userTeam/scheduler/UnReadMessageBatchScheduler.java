@@ -1,14 +1,14 @@
-package org.gdsccau.team5.safebridge.domain.user_team.scheduler;
+package org.gdsccau.team5.safebridge.domain.userTeam.scheduler;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.gdsccau.team5.safebridge.common.redis.RedisManager;
-import org.gdsccau.team5.safebridge.domain.user_team.converter.UserTeamConverter;
-import org.gdsccau.team5.safebridge.domain.user_team.dto.UserTeamDto.UserTeamUnReadMessageDto;
-import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamQueryService;
-import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamCommandService;
+import org.gdsccau.team5.safebridge.domain.userTeam.converter.UserTeamConverter;
+import org.gdsccau.team5.safebridge.domain.userTeam.dto.UserTeamDto.UserTeamUnReadMessageDto;
+import org.gdsccau.team5.safebridge.domain.userTeam.service.UserTeamQueryService;
+import org.gdsccau.team5.safebridge.domain.userTeam.service.UserTeamCommandService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 

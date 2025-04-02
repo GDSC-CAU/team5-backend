@@ -1,8 +1,8 @@
-package org.gdsccau.team5.safebridge.domain.user_team.converter;
+package org.gdsccau.team5.safebridge.domain.userTeam.converter;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.gdsccau.team5.safebridge.domain.user_team.dto.UserTeamDto.UserTeamUnReadMessageDto;
+import org.gdsccau.team5.safebridge.domain.userTeam.dto.UserTeamDto.UserTeamUnReadMessageDto;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserTeamConverter {

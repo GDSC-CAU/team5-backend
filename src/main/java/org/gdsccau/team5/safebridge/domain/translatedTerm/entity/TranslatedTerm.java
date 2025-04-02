@@ -18,6 +18,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.gdsccau.team5.safebridge.common.term.Language;
+import org.gdsccau.team5.safebridge.domain.BaseEntity;
 import org.gdsccau.team5.safebridge.domain.term.entity.Term;
 
 @Entity
@@ -29,7 +30,7 @@ import org.gdsccau.team5.safebridge.domain.term.entity.Term;
         name = "translated_term",
         uniqueConstraints = @UniqueConstraint(columnNames = {"term_id", "language"})
 )
-public class TranslatedTerm {
+public class TranslatedTerm extends BaseEntity {
 
     @Id
     @Column(name = "translated_term_id")

@@ -35,7 +35,7 @@ public class ChatController {
             @PathVariable(name = "teamId") final Long teamId,
             @RequestParam(name = "userId") final Long userId,
             @RequestParam(name = "cursorId", required = false) final Long cursorId,
-            @RequestParam(name = "role") final String role) {
+            @RequestParam(name = "role", defaultValue = "MEMBER") final String role) {
         return ApiResponse.onSuccess(ChatSuccessCode.FIND_CHAT_IN_TEAM,
                 chatFacade.findAllChats(role, cursorId, userId, teamId));
     }

@@ -3,10 +3,12 @@ package org.gdsccau.team5.safebridge.domain.chat.dto;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.gdsccau.team5.safebridge.domain.term.dto.TermDto.DecideToCreateTermEntityDto;
 
 public class ChatDto {
 
@@ -34,7 +36,7 @@ public class ChatDto {
     @Getter
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class TermDataWithNewChatDto{
+    public static class TermDataWithNewChatDto {
         List<TermDataDto> terms;
         String newChat;
     }
@@ -43,8 +45,9 @@ public class ChatDto {
     @Getter
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class TranslatedDataDto{
+    public static class TranslatedDataDto {
         String translatedText;
         Map<String, String> translatedTerms;
+        Set<DecideToCreateTermEntityDto> decidableSet;
     }
 }

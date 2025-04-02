@@ -1,8 +1,10 @@
 package org.gdsccau.team5.safebridge.domain.translatedTerm.service;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.term.Language;
+import org.gdsccau.team5.safebridge.domain.translatedTerm.dto.TranslatedTermDto.TranslatedWordAndTermIdDto;
 import org.gdsccau.team5.safebridge.domain.translatedTerm.repository.TranslatedTermRepository;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +19,11 @@ public class TranslatedTermQueryService {
         return translatedTermRepository.findTranslatedWordByLanguageAndTermId(language, termId).orElse(null);
     }
 
-    public Boolean isTranslatedTermExists(final Language language, final Long termId) {
+    public Boolean existsByLanguageAndTermId(final Language language, final Long termId) {
         return translatedTermRepository.existsByLanguageAndTermId(language, termId);
+    }
+
+    public List<TranslatedWordAndTermIdDto> findTranslatedWordsByLanguageAndTermIds(final Language language, final List<Long> termIds) {
+        return translatedTermRepository.findTranslatedTermsByLanguageAndTermIds(language, termIds);
     }
 }

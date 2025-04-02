@@ -1,9 +1,9 @@
-package org.gdsccau.team5.safebridge.domain.user_team.repository;
+package org.gdsccau.team5.safebridge.domain.userTeam.repository;
 
 import java.sql.PreparedStatement;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.gdsccau.team5.safebridge.domain.user_team.dto.UserTeamDto.UserTeamUnReadMessageDto;
+import org.gdsccau.team5.safebridge.domain.userTeam.dto.UserTeamDto.UserTeamUnReadMessageDto;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,7 +16,7 @@ public class UserTeamBatchRepository {
 
     @Transactional
     public void unReadMessageBatchUpdate(final List<UserTeamUnReadMessageDto> dtos) {
-        String sql = "UPDATE user_team SET unReadMessage = ? WHERE user_id = ? AND team_id = ?";
+        String sql = "UPDATE user_team SET un_read_message = ? WHERE user_id = ? AND team_id = ?";
         jdbcTemplate.batchUpdate(sql,
                 dtos,
                 dtos.size(),

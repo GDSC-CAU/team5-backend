@@ -23,7 +23,11 @@ public class TermQueryService {
         return termRepository.findTermIdByWord(word).orElse(null);
     }
 
+    public boolean existsByWord(final String word) {
+        return termRepository.existsByWord(word);
+    }
+
     public List<TermIdAndWordDto> findTermIdAndWord(final List<String> words) {
-        return termRepository.findTermIdAndWordByWord(words);
+        return termRepository.findTermIdAndWordByWords(words);
     }
 }

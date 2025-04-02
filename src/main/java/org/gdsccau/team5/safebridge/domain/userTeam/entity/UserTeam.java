@@ -1,4 +1,4 @@
-package org.gdsccau.team5.safebridge.domain.user_team.entity;
+package org.gdsccau.team5.safebridge.domain.userTeam.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

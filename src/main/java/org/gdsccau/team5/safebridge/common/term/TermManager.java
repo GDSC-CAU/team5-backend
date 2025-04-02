@@ -24,12 +24,11 @@ import org.ahocorasick.trie.Trie.TrieBuilder;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataWithNewChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TranslatedDataDto;
+import org.gdsccau.team5.safebridge.domain.term.dto.TermDto.DecideToCreateTermEntityDto;
+import org.gdsccau.team5.safebridge.domain.term.dto.TermDto.TermPairDto;
 import org.gdsccau.team5.safebridge.domain.term.entity.Term;
-import org.gdsccau.team5.safebridge.domain.term.service.TermCacheCommandService;
 import org.gdsccau.team5.safebridge.domain.term.service.TermCacheQueryService;
-import org.gdsccau.team5.safebridge.domain.term.service.TermCommandService;
 import org.gdsccau.team5.safebridge.domain.term.service.TermQueryService;
-import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermCommandService;
 import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermQueryService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
@@ -65,21 +64,15 @@ public class TermManager {
     private static final String SOURCE_LANGUAGE_CODE = "ko";
 
     private final TermQueryService termQueryService;
-    private final TermCacheCommandService termCacheCommandService;
     private final TermCacheQueryService termCacheQueryService;
-    private final TermCommandService termCommandService;
     private final TranslatedTermQueryService translatedTermQueryService;
-    private final TranslatedTermCommandService translatedTermCommandService;
 
     private final Trie trie;
     private final Map<String, String> termsWithMeaning;
 
     public TermManager(final TermQueryService termQueryService,
-                       final TermCacheCommandService termCacheCommandService,
                        final TermCacheQueryService termCacheQueryService,
-                       final TermCommandService termCommandService,
-                       final TranslatedTermQueryService translatedTermQueryService,
-                       final TranslatedTermCommandService translatedTermCommandService) {
+                       final TranslatedTermQueryService translatedTermQueryService) {
         Set<String> terms = TermLoader.loadTermsOnly();
         TrieBuilder builder = Trie.builder();
         for (String term : terms) {
@@ -88,11 +81,8 @@ public class TermManager {
         this.trie = builder.build();
         this.termsWithMeaning = TermLoader.loadTermsWithMeaning();
         this.termQueryService = termQueryService;
-        this.termCacheCommandService = termCacheCommandService;
         this.termCacheQueryService = termCacheQueryService;
-        this.termCommandService = termCommandService;
         this.translatedTermQueryService = translatedTermQueryService;
-        this.translatedTermCommandService = translatedTermCommandService;
     }
 
     public TermDataWithNewChatDto query(final String chat) {
@@ -133,38 +123,45 @@ public class TermManager {
                         Translate.TranslateOption.sourceLanguage(SOURCE_LANGUAGE_CODE),
                         Translate.TranslateOption.targetLanguage(language.getCode()));
                 String translatedText = translation.getTranslatedText().replaceAll("&#39;", "'");
-                Map<String, String> translatedTerms = this.translateTerms(translate, termDataDtos, language);
-                return this.createdTranslatedDataDto(translatedText, translatedTerms);
+                TermPairDto result = translateTerms(translate, termDataDtos, language);
+                return createdTranslatedDataDto(translatedText, result.getTranslatedTerms(), result.getDecidableSet());
             } catch (IOException e) {
                 log.error("Google Translate API 호출 중 오류 발생", e);
-                return this.createdTranslatedDataDto(null, null);
+                return createdTranslatedDataDto(null, null, null);
             }
         });
     }
 
-    private Map<String, String> translateTerms(final Translate translate, final List<TermDataDto> termDataDtos,
-                                               final Language language) {
-        // TODO 이미 현장 용어에 대해 번역을 했는지 확인하고 안 했으면 Local Cache -> DB를 순서대로 조회해서 가져온다.
+    private TermPairDto translateTerms(final Translate translate, final List<TermDataDto> termDataDtos,
+                                       final Language language) {
         Map<String, String> result = new HashMap<>();
+        Set<DecideToCreateTermEntityDto> decidableSet = new HashSet<>();
+
         termDataDtos.forEach(termDataDto -> {
-            String translatedTerm = termCacheQueryService.findTerm(termDataDto.getTerm(), language);
-            if (translatedTerm == null) {
+            String translatedWord = termCacheQueryService.findTerm(termDataDto.getTerm(), language);
+            if (translatedWord == null) {
                 Term term = termQueryService.findTermByWord(termDataDto.getTerm());
-                if (term != null) {
-                    translatedTerm = translatedTermQueryService.findTranslatedWordByLanguageAndTermId(language,
+                if (term != null && translatedTermQueryService.existsByLanguageAndTermId(language, term.getId())) {
+                    translatedWord = translatedTermQueryService.findTranslatedWordByLanguageAndTermId(language,
                             term.getId());
                 } else {
                     Translation translation = translate.translate(termDataDto.getMeaning(),
                             Translate.TranslateOption.sourceLanguage(SOURCE_LANGUAGE_CODE),
                             Translate.TranslateOption.targetLanguage(language.getCode()));
-                    translatedTerm = translation.getTranslatedText().replaceAll("&#39;", "'");
-                    term = termCommandService.createTerm(termDataDto.getTerm(), termDataDto.getMeaning());
-                    translatedTermCommandService.createTranslatedTerm(term, language, translatedTerm);
+                    translatedWord = translation.getTranslatedText().replaceAll("&#39;", "'");
+                    if (term != null) {
+                        decidableSet.add(createDecideToCreateTermEntityDto(termDataDto, language, translatedWord, 1));
+                    } else {
+                        decidableSet.add(createDecideToCreateTermEntityDto(termDataDto, language, translatedWord, 2));
+                    }
                 }
             }
-            result.put(termDataDto.getTerm(), translatedTerm);
+            result.put(termDataDto.getTerm(), translatedWord);
         });
-        return result;
+        return TermPairDto.builder()
+                .translatedTerms(result)
+                .decidableSet(decidableSet)
+                .build();
     }
 
     private void removeDuplicatedWord(final Set<String> terms, Set<String> finalTerms) {
@@ -219,10 +216,25 @@ public class TermManager {
     }
 
     private TranslatedDataDto createdTranslatedDataDto(final String translatedText,
-                                                       final Map<String, String> translatedTerms) {
+                                                       final Map<String, String> translatedTerms,
+                                                       final Set<DecideToCreateTermEntityDto> decidableSet) {
         return TranslatedDataDto.builder()
                 .translatedText(translatedText)
                 .translatedTerms(translatedTerms)
+                .decidableSet(decidableSet)
+                .build();
+    }
+
+    private DecideToCreateTermEntityDto createDecideToCreateTermEntityDto(final TermDataDto termDataDto,
+                                                                          final Language language,
+                                                                          final String translatedWord,
+                                                                          final int choice) {
+        return DecideToCreateTermEntityDto.builder()
+                .word(termDataDto.getTerm())
+                .meaning(termDataDto.getMeaning())
+                .language(language)
+                .translatedWord(translatedWord)
+                .choice(choice)
                 .build();
     }
 }

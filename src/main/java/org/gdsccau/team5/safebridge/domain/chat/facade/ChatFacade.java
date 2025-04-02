@@ -21,6 +21,8 @@ import org.gdsccau.team5.safebridge.domain.chat.service.ChatQueryService;
 import org.gdsccau.team5.safebridge.domain.chat.service.ChatSendService;
 import org.gdsccau.team5.safebridge.domain.team.entity.Team;
 import org.gdsccau.team5.safebridge.domain.team.service.TeamQueryService;
+import org.gdsccau.team5.safebridge.domain.term.dto.TermDto.TermIdAndWordDto;
+import org.gdsccau.team5.safebridge.domain.term.service.TermCommandService;
 import org.gdsccau.team5.safebridge.domain.term.service.TermMetaDataCommandService;
 import org.gdsccau.team5.safebridge.domain.term.service.TermQueryService;
 import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermQueryService;
@@ -28,7 +30,7 @@ import org.gdsccau.team5.safebridge.domain.user.dto.UserDto.UserIdAndLanguageDto
 import org.gdsccau.team5.safebridge.domain.user.entity.User;
 import org.gdsccau.team5.safebridge.domain.user.enums.Role;
 import org.gdsccau.team5.safebridge.domain.user.service.UserQueryService;
-import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamQueryService;
+import org.gdsccau.team5.safebridge.domain.userTeam.service.UserTeamQueryService;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +48,7 @@ public class ChatFacade {
     private final UserQueryService userQueryService;
     private final UserTeamQueryService userTeamQueryService;
     private final TermQueryService termQueryService;
+    private final TermCommandService termCommandService;
     private final TermMetaDataCommandService termMetaDataCommandService;
     private final TranslatedTermQueryService translatedTermQueryService;
     private final TermManager termManager;
@@ -53,6 +56,9 @@ public class ChatFacade {
     public void chat(final ChatMessageRequestDto chatRequestDto, final Long teamId, final Chat chat) {
         TermDataWithNewChatDto result = termManager.query(chatRequestDto.getMessage()); // 현장용어 추출
         chatSendService.sendChatMessage(result, chatRequestDto.getName(), chat, teamId); // 채팅은 즉시 전송
+
+        // 현장용어 추출 후 Term 엔티티 저장하기
+        createTerms(result);
 
         // 채팅방에 속한 모든 사용자의 Id와 언어 가져오기
         List<UserIdAndLanguageDto> dtos = userTeamQueryService.findAllUserIdAndLanguageByTeamId(teamId);
@@ -65,7 +71,8 @@ public class ChatFacade {
         });
 
         // 현장용어를 위한 Local Cache 업데이트
-        termMetaDataCommandService.updateTermMetaDataInLocalCache(result.getTerms(), getLanguageSet(dtos), chat.getCreatedAt());
+        termMetaDataCommandService.updateTermMetaDataInLocalCache(result.getTerms(), getLanguageSet(dtos),
+                chat.getCreatedAt());
     }
 
     @Transactional
@@ -81,23 +88,14 @@ public class ChatFacade {
         Slice<ChatMessageWithIsReadResponseDto> chatSlice = chatQueryService.findAllChatsByTeamId(Role.valueOf(role),
                 cursorId, teamId, language);
         LocalDateTime accessDate = userTeamQueryService.findAccessDateByUserIdAndTeamId(userId, teamId);
-        for (ChatMessageWithIsReadResponseDto chatMessage : chatSlice.getContent()) {
+        chatSlice.getContent().forEach(chatMessage -> {
+            // 이미 읽은 채팅인지 검사한다.
             chatMessage.setRead(chatMessage.getSendTime().isBefore(accessDate));
-            // 메시지에 포함된 {현장용어 : 번역용어} 쌍 담아서 보내기
+            // 관리자가 아닌 근로자라면, 채팅에 포함된 {현장용어 : 번역용어} 데이터가 필요하다.
             if (role.equals("MEMBER")) {
-                Map<String, String> wordZip = new HashMap<>();
-                List<String> words = termManager.query(chatMessage.getMessage()).getTerms().stream()
-                        .map(TermDataDto::getTerm)
-                        .toList();
-                for (String word : words) {
-                    Long termId = termQueryService.findTermIdByWord(word);
-                    String translatedWord = translatedTermQueryService.findTranslatedWordByLanguageAndTermId(language,
-                            termId);
-                    wordZip.put(word, translatedWord);
-                }
-                chatMessage.setTranslatedTerms(wordZip);
+                setWordZipInChatMessage(chatMessage, language);
             }
-        }
+        });
         Map<String, Object> response = new HashMap<>();
         response.put("messages", chatSlice.getContent());
         response.put("hasNext", chatSlice.hasNext());
@@ -109,9 +107,64 @@ public class ChatFacade {
         return chatQueryService.findAllWorks(teamIds);
     }
 
+    private void createTerms(final TermDataWithNewChatDto result) {
+        result.getTerms()
+                .forEach(dto -> {
+                    String word = dto.getTerm();
+                    String meaning = dto.getMeaning();
+                    if (!termQueryService.existsByWord(word)) {
+                        termCommandService.createTerm(word, meaning);
+                    }
+                });
+    }
+
     private Set<Language> getLanguageSet(final List<UserIdAndLanguageDto> dtos) {
         Set<Language> languageSet = new HashSet<>();
         dtos.forEach(dto -> languageSet.add(dto.getLanguage()));
         return languageSet;
+    }
+
+    private void setWordZipInChatMessage(ChatMessageWithIsReadResponseDto chatMessage, final Language language) {
+        Map<String, String> wordZip = getWordZipInChatMessage(chatMessage, language);
+        chatMessage.setTranslatedTerms(wordZip);
+    }
+
+    private Map<String, String> getWordZipInChatMessage(final ChatMessageWithIsReadResponseDto chatMessage,
+                                                        final Language language) {
+        Map<String, String> wordZip = new HashMap<>();
+        List<String> words = termManager.query(chatMessage.getMessage()).getTerms().stream()
+                .map(TermDataDto::getTerm)
+                .toList();
+
+        List<TermIdAndWordDto> termIdAndWordDtos = termQueryService.findTermIdAndWord(words);
+        Map<Long, String> termIdAndWordMap = getTermIdAndWordMap(termIdAndWordDtos);
+        List<Long> termIds = getTermIds(termIdAndWordDtos);
+
+        // TODO termId는 잘 가져옴. 이게 못 가져옴
+        translatedTermQueryService.findTranslatedWordsByLanguageAndTermIds(language, termIds)
+                .forEach(dto -> {
+                    String translatedWord = dto.getTranslatedWord();
+                    Long termId = dto.getTermId();
+                    String word = termIdAndWordMap.get(termId);
+                    log.info("{}", translatedWord);
+                    wordZip.put(word, translatedWord);
+                });
+        return wordZip;
+    }
+
+    private Map<Long, String> getTermIdAndWordMap(final List<TermIdAndWordDto> termIdAndWordDtos) {
+        Map<Long, String> termIdAndWordMap = new HashMap<>();
+        termIdAndWordDtos.forEach(termIdAndWordDto -> {
+            Long termId = termIdAndWordDto.getTermId();
+            String word = termIdAndWordDto.getWord();
+            termIdAndWordMap.put(termId, word);
+        });
+        return termIdAndWordMap;
+    }
+
+    private List<Long> getTermIds(final List<TermIdAndWordDto> termIdAndWordDtos) {
+        return termIdAndWordDtos.stream()
+                .map(TermIdAndWordDto::getTermId)
+                .toList();
     }
 }

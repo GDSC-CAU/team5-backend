@@ -10,8 +10,8 @@ import org.gdsccau.team5.safebridge.domain.team.service.TeamQueryService;
 import org.gdsccau.team5.safebridge.domain.team.service.TeamCommandService;
 import org.gdsccau.team5.safebridge.domain.user.entity.User;
 import org.gdsccau.team5.safebridge.domain.user.service.UserQueryService;
-import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamQueryService;
-import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamCommandService;
+import org.gdsccau.team5.safebridge.domain.userTeam.service.UserTeamQueryService;
+import org.gdsccau.team5.safebridge.domain.userTeam.service.UserTeamCommandService;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 

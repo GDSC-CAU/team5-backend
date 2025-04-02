@@ -17,8 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class UserController {
 
-  @Autowired
-  UserAuthService userAuthService;
+  private final UserAuthService userAuthService;
 
   @PostMapping("/auth/login")
   public ApiResponse<UserResponseDto.LoginDto> login(

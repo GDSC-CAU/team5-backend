@@ -1,4 +1,4 @@
-package org.gdsccau.team5.safebridge.domain.user_team.service;
+package org.gdsccau.team5.safebridge.domain.userTeam.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -8,8 +8,8 @@ import org.gdsccau.team5.safebridge.common.code.error.UserTeamErrorCode;
 import org.gdsccau.team5.safebridge.common.exception.handler.ExceptionHandler;
 import org.gdsccau.team5.safebridge.domain.team.dto.TeamDto.TeamOrderDto;
 import org.gdsccau.team5.safebridge.domain.user.dto.UserDto.UserIdAndLanguageDto;
-import org.gdsccau.team5.safebridge.domain.user_team.entity.UserTeam;
-import org.gdsccau.team5.safebridge.domain.user_team.repository.UserTeamRepository;
+import org.gdsccau.team5.safebridge.domain.userTeam.entity.UserTeam;
+import org.gdsccau.team5.safebridge.domain.userTeam.repository.UserTeamRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

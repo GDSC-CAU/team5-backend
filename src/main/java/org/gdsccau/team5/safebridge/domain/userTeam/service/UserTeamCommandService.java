@@ -1,4 +1,4 @@
-package org.gdsccau.team5.safebridge.domain.user_team.service;
+package org.gdsccau.team5.safebridge.domain.userTeam.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -6,10 +6,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.domain.team.entity.Team;
 import org.gdsccau.team5.safebridge.domain.user.entity.User;
-import org.gdsccau.team5.safebridge.domain.user_team.dto.UserTeamDto.UserTeamUnReadMessageDto;
-import org.gdsccau.team5.safebridge.domain.user_team.entity.UserTeam;
-import org.gdsccau.team5.safebridge.domain.user_team.repository.UserTeamBatchRepository;
-import org.gdsccau.team5.safebridge.domain.user_team.repository.UserTeamRepository;
+import org.gdsccau.team5.safebridge.domain.userTeam.dto.UserTeamDto.UserTeamUnReadMessageDto;
+import org.gdsccau.team5.safebridge.domain.userTeam.entity.UserTeam;
+import org.gdsccau.team5.safebridge.domain.userTeam.repository.UserTeamBatchRepository;
+import org.gdsccau.team5.safebridge.domain.userTeam.repository.UserTeamRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
