@@ -1,27 +1,26 @@
 package org.gdsccau.team5.safebridge.domain.chat.service;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.gdsccau.team5.safebridge.common.term.Language;
 import org.gdsccau.team5.safebridge.common.term.TermManager;
 import org.gdsccau.team5.safebridge.domain.chat.converter.ChatConverter;
-import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataWithNewChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TranslatedDataDto;
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
 import org.gdsccau.team5.safebridge.domain.team.dto.response.TeamResponseDto.TeamListDto;
-import org.gdsccau.team5.safebridge.domain.team.service.TeamCheckService;
-import org.gdsccau.team5.safebridge.domain.term.service.TermCheckService;
-import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermCheckService;
-import org.gdsccau.team5.safebridge.domain.translation.service.TranslationCheckService;
-import org.gdsccau.team5.safebridge.domain.translation.service.TranslationService;
-import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamCheckService;
+import org.gdsccau.team5.safebridge.domain.team.service.TeamQueryService;
+import org.gdsccau.team5.safebridge.domain.term.dto.TermDto;
+import org.gdsccau.team5.safebridge.domain.term.entity.Term;
+import org.gdsccau.team5.safebridge.domain.term.service.TermQueryService;
+import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermCommandService;
+import org.gdsccau.team5.safebridge.domain.translation.service.TranslationCommandService;
+import org.gdsccau.team5.safebridge.domain.userTeam.service.UserTeamQueryService;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -34,15 +33,15 @@ public class ChatSendService {
     private static final String TEAMS_SUB_URL = "/sub/teams/";
     private static final String TRANSLATE_SUB_URL = "/sub/translate/";
 
-    private final TranslationService translationService;
-    private final TranslationCheckService translationCheckService;
-    private final TranslatedTermCheckService translatedTermCheckService;
-    private final TermCheckService termCheckService;
-    private final TeamCheckService teamCheckService;
-    private final UserTeamCheckService userTeamCheckService;
+    private final TranslationCommandService translationCommandService;
+    private final TermQueryService termQueryService;
+    private final TranslatedTermCommandService translatedTermCommandService;
+    private final TeamQueryService teamQueryService;
+    private final UserTeamQueryService userTeamQueryService;
     private final SimpMessagingTemplate messagingTemplate;
     private final TermManager termManager;
     private final RedisManager redisManager;
+    private final Set<String> ttSet = ConcurrentHashMap.newKeySet();
 
     public void sendChatMessage(final TermDataWithNewChatDto result, final String name, final Chat chat,
                                 final Long teamId) {
@@ -52,34 +51,20 @@ public class ChatSendService {
 
     public void sendTranslatedMessage(final TermDataWithNewChatDto result, final Language language, final Chat chat,
                                       final Long teamId, final Long userId) {
-        // TODO 이미 번역되었다면 (같은 문장, 다른 사람, 같은 언어) 번역 API를 호출하지 않는다.
-        if (translationCheckService.isTranslationExists(chat.getId(), language)) {
-            Map<String, String> wordZip = new HashMap<>();
-
-            List<String> words = result.getTerms().stream()
-                    .map(TermDataDto::getTerm)
-                    .toList();
-            for (String word : words) {
-                Long termId = termCheckService.findTermIdByWord(word);
-                String translatedWord = translatedTermCheckService.findTranslatedTermByLanguageAndTermId(language,
-                        termId);
-                wordZip.put(word, translatedWord);
-            }
-            String translatedText = translationCheckService.findTranslatedTextByChatIdAndLanguage(chat.getId(),
-                    language);
-            messagingTemplate.convertAndSend(TRANSLATE_SUB_URL + teamId + "/" + userId,
-                    ChatConverter.toTranslatedTextResponseDto(translatedText, wordZip, chat.getId()));
-        } else {
-            CompletableFuture<TranslatedDataDto> translatedText = termManager.translate(
-                    result.getNewChat(), result.getTerms(), language);
-            translatedText.thenAccept(dto -> {
-                translationService.createTranslation(dto.getTranslatedText(), language, chat.getId());
-                messagingTemplate.convertAndSend(TRANSLATE_SUB_URL + teamId + "/" + userId,
-                        ChatConverter.toTranslatedTextResponseDto(dto.getTranslatedText(), dto.getTranslatedTerms(),
-                                chat.getId()));
+        CompletableFuture<TranslatedDataDto> translatedData = termManager.translate(result.getNewChat(),
+                result.getTerms(), language);
+        translatedData.thenAccept(dto -> {
+            dto.getTtSet().forEach(data -> {
+                // 처음으로 번역하는 현장 용어면 DB에 저장한다.
+                createTranslatedTerm(language, data);
             });
-            // TODO 예외처리
-        }
+            // 처음 번역하는 문장이면 DB에 저장한다.
+            createTranslation(language, dto, chat);
+            messagingTemplate.convertAndSend(TRANSLATE_SUB_URL + teamId + "/" + userId,
+                    ChatConverter.toTranslatedTextResponseDto(dto.getTranslatedText(), dto.getTranslatedTerms(),
+                            chat.getId()));
+        });
+        // TODO 비동기 처리에 대한 예외처리
     }
 
     public void sendTeamData(final Chat chat, final Long teamId, final Long userId) {
@@ -90,29 +75,47 @@ public class ChatSendService {
     private TeamListDto refreshRedisValue(final Chat chat, final Long teamId, final Long userId) {
         String inRoomKey = redisManager.getInRoomKey(userId, teamId);
         String unReadMessageKey = redisManager.getUnReadMessageKey(userId, teamId);
-        String zSetKey = redisManager.getZSetKey(userId);
+        String teamListKey = redisManager.getTeamListKey(userId);
 
-        int inRoom = redisManager.getInRoom(inRoomKey);
+        int inRoom = redisManager.getInRoomOrDefault(inRoomKey,
+                () -> userTeamQueryService.findInRoomByUserIdAndTeamId(userId, teamId));
         if (inRoom == 0) {
             redisManager.updateUnReadMessage(unReadMessageKey);
+            redisManager.updateUnReadMessageDirtySet(userId, teamId);
         }
-        redisManager.updateZSet(zSetKey, teamId, chat);
+        redisManager.updateTeamList(teamListKey, teamId, chat);
 
-        // TODO
         return createTeamListDto(
-                teamId, chat.getText(), chat.getCreatedAt(), redisManager.getUnReadMessage(unReadMessageKey)
+                teamId, chat.getText(), chat.getCreatedAt(), redisManager.getUnReadMessageOrDefault(unReadMessageKey,
+                        () -> userTeamQueryService.findUnReadMessageByUserIdAndTeamId(userId, teamId))
         );
+    }
+
+    // TODO 서버가 꺼지면 중복 저장이 됩니다 ㅎㅎ.. 1. UPSERT, 2. Redis, 3. exist 쿼리
+    private void createTranslatedTerm(final Language language, final TermDto.CreateTranslatedTermEntityDto data) {
+        String isNewTermKey = language + ":" + data.getWord();
+        if (ttSet.add(isNewTermKey)) {
+            Term term = termQueryService.findTermByWord(data.getWord());
+            translatedTermCommandService.createTranslatedTerm(term, data.getLanguage(), data.getTranslatedWord());
+        }
+    }
+
+    private void createTranslation(final Language language, final TranslatedDataDto dto, final Chat chat) {
+        String isNewChatKey = language + ":" + chat.getId();
+        if (ttSet.add(isNewChatKey)) {
+            translationCommandService.createTranslation(dto.getTranslatedText(), language, chat.getId());
+        }
     }
 
     private TeamListDto createTeamListDto(final Long teamId, final String lastChat,
                                           final LocalDateTime lastChatTime, final int unReadMessage) {
         return TeamListDto.builder()
                 .teamId(teamId)
-                .teamName(teamCheckService.findNameByTeamId(teamId))
+                .teamName(teamQueryService.findNameByTeamId(teamId))
                 .lastChat(lastChat)
                 .lastChatTime(lastChatTime)
                 .unReadMessage(unReadMessage)
-                .numberOfUsers(userTeamCheckService.countNumOfUsersByTeamId(teamId))
+                .numberOfUsers(userTeamQueryService.countNumOfUsersByTeamId(teamId))
                 .build();
     }
 }

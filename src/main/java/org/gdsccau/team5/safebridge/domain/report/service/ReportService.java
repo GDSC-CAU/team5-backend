@@ -2,7 +2,7 @@ package org.gdsccau.team5.safebridge.domain.report.service;
 
 import java.io.IOException;
 import java.util.List;
-import org.gdsccau.team5.safebridge.common.code.error.ChatErrorCode;
+
 import org.gdsccau.team5.safebridge.common.code.error.ReportErrorCode;
 import org.gdsccau.team5.safebridge.common.exception.handler.ExceptionHandler;
 import org.gdsccau.team5.safebridge.domain.report.converter.ReportConverter;
@@ -11,10 +11,8 @@ import org.gdsccau.team5.safebridge.domain.report.entity.Report;
 import org.gdsccau.team5.safebridge.domain.report.repository.ReportRepository;
 import org.gdsccau.team5.safebridge.domain.report.webClient.SttWebClient;
 import org.gdsccau.team5.safebridge.domain.user.entity.User;
-import org.gdsccau.team5.safebridge.domain.user.service.UserCheckService;
+import org.gdsccau.team5.safebridge.domain.user.service.UserQueryService;
 import org.gdsccau.team5.safebridge.domain.userAdmin.service.UserAdminService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,17 +22,17 @@ public class ReportService {
 
   private final SttWebClient sttWebClient;
   private final ReportRepository reportRepository;
-  private final UserCheckService userCheckService;
+  private final UserQueryService userQueryService;
   private final UserAdminService userAdminService;
 
   public ReportService(final SttWebClient sttWebClient,
       final ReportRepository reportRepository,
-      UserCheckService userCheckService,
+      UserQueryService userQueryService,
       UserAdminService userAdminService
   ) {
     this.sttWebClient = sttWebClient;
     this.reportRepository = reportRepository;
-    this.userCheckService = userCheckService;
+    this.userQueryService = userQueryService;
     this.userAdminService = userAdminService;
   }
 
@@ -42,7 +40,7 @@ public class ReportService {
 
     try {
       String text = sttWebClient.requestStt(requestDto.file());
-      User user = userCheckService.findByUserId(requestDto.userId());
+      User user = userQueryService.findByUserId(requestDto.userId());
       User admin = userAdminService.findAdminByEmployee(user);
 
       Report report = ReportConverter.toReport(text, user, admin);
