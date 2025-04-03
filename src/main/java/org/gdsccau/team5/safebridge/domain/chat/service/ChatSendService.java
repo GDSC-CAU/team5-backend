@@ -1,9 +1,5 @@
 package org.gdsccau.team5.safebridge.domain.chat.service;
 
-import java.time.LocalDateTime;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.redis.RedisManager;
@@ -15,16 +11,19 @@ import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TranslatedDataDto;
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
 import org.gdsccau.team5.safebridge.domain.team.dto.response.TeamResponseDto.TeamListDto;
 import org.gdsccau.team5.safebridge.domain.team.service.TeamQueryService;
-import org.gdsccau.team5.safebridge.domain.term.dto.TermDto.DecideToCreateTermEntityDto;
+import org.gdsccau.team5.safebridge.domain.term.dto.TermDto;
 import org.gdsccau.team5.safebridge.domain.term.entity.Term;
-import org.gdsccau.team5.safebridge.domain.term.service.TermCommandService;
 import org.gdsccau.team5.safebridge.domain.term.service.TermQueryService;
 import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermCommandService;
-import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermQueryService;
 import org.gdsccau.team5.safebridge.domain.translation.service.TranslationCommandService;
 import org.gdsccau.team5.safebridge.domain.userTeam.service.UserTeamQueryService;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @Slf4j
@@ -56,15 +55,14 @@ public class ChatSendService {
         CompletableFuture<TranslatedDataDto> translatedData = termManager.translate(result.getNewChat(),
                 result.getTerms(), language);
         translatedData.thenAccept(dto -> {
-            dto.getDecidableSet().forEach(data -> {
+            dto.getTtSet().forEach(data -> {
                 // 처음으로 번역하는 현장 용어면 DB에 저장한다.
                 createTranslatedTerm(language, data);
             });
             // 처음 번역하는 문장이면 DB에 저장한다.
             createTranslation(language, dto, chat);
             messagingTemplate.convertAndSend(TRANSLATE_SUB_URL + teamId + "/" + userId,
-                    ChatConverter.toTranslatedTextResponseDto(dto.getTranslatedText(), dto.getTranslatedTerms(),
-                            chat.getId()));
+                    ChatConverter.toTranslatedTextResponseDto(dto.getTranslatedText(), dto.getTranslatedTerms(), chat.getId()));
         });
         // TODO 비동기 처리에 대한 예외처리
     }
@@ -94,12 +92,11 @@ public class ChatSendService {
     }
 
     // TODO 서버가 꺼지면 중복 저장이 됩니다 ㅎㅎ.. 1. UPSERT, 2. Redis, 3. exist 쿼리
-    private void createTranslatedTerm(final Language language, final DecideToCreateTermEntityDto data) {
+    private void createTranslatedTerm(final Language language, final TermDto.CreateTranslatedTermEntityDto data) {
         String isNewTermKey = language + ":" + data.getWord();
         if (decideIsNewSet.add(isNewTermKey)) {
             Term term = termQueryService.findTermByWord(data.getWord());
-            translatedTermCommandService.createTranslatedTerm(term, data.getLanguage(),
-                    data.getTranslatedWord());
+            translatedTermCommandService.createTranslatedTerm(term, data.getLanguage(), data.getTranslatedWord());
         }
     }
 

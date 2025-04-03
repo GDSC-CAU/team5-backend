@@ -5,6 +5,7 @@ import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.translate.Translate;
 import com.google.cloud.translate.TranslateOptions;
 import com.google.cloud.translate.Translation;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,6 +18,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+
 import lombok.extern.slf4j.Slf4j;
 import org.ahocorasick.trie.Emit;
 import org.ahocorasick.trie.Trie;
@@ -24,7 +26,8 @@ import org.ahocorasick.trie.Trie.TrieBuilder;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataWithNewChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TranslatedDataDto;
-import org.gdsccau.team5.safebridge.domain.term.dto.TermDto.DecideToCreateTermEntityDto;
+import org.gdsccau.team5.safebridge.domain.term.dto.TermDto;
+
 import org.gdsccau.team5.safebridge.domain.term.dto.TermDto.TermPairDto;
 import org.gdsccau.team5.safebridge.domain.term.entity.Term;
 import org.gdsccau.team5.safebridge.domain.term.service.TermCacheQueryService;
@@ -124,7 +127,7 @@ public class TermManager {
                         Translate.TranslateOption.targetLanguage(language.getCode()));
                 String translatedText = translation.getTranslatedText().replaceAll("&#39;", "'");
                 TermPairDto result = translateTerms(translate, termDataDtos, language);
-                return createdTranslatedDataDto(translatedText, result.getTranslatedTerms(), result.getDecidableSet());
+                return createdTranslatedDataDto(translatedText, result.getTranslatedTerms(), result.getTtSet());
             } catch (IOException e) {
                 log.error("Google Translate API 호출 중 오류 발생", e);
                 return createdTranslatedDataDto(null, null, null);
@@ -135,32 +138,27 @@ public class TermManager {
     private TermPairDto translateTerms(final Translate translate, final List<TermDataDto> termDataDtos,
                                        final Language language) {
         Map<String, String> result = new HashMap<>();
-        Set<DecideToCreateTermEntityDto> decidableSet = new HashSet<>();
+        Set<TermDto.CreateTranslatedTermEntityDto> ttSet = new HashSet<>();
 
         termDataDtos.forEach(termDataDto -> {
             String translatedWord = termCacheQueryService.findTerm(termDataDto.getTerm(), language);
             if (translatedWord == null) {
                 Term term = termQueryService.findTermByWord(termDataDto.getTerm());
-                if (term != null && translatedTermQueryService.existsByLanguageAndTermId(language, term.getId())) {
-                    translatedWord = translatedTermQueryService.findTranslatedWordByLanguageAndTermId(language,
-                            term.getId());
+                if (translatedTermQueryService.existsByLanguageAndTermId(language, term.getId())) {
+                    translatedWord = translatedTermQueryService.findTranslatedWordByLanguageAndTermId(language, term.getId());
                 } else {
                     Translation translation = translate.translate(termDataDto.getMeaning(),
                             Translate.TranslateOption.sourceLanguage(SOURCE_LANGUAGE_CODE),
                             Translate.TranslateOption.targetLanguage(language.getCode()));
                     translatedWord = translation.getTranslatedText().replaceAll("&#39;", "'");
-                    if (term != null) {
-                        decidableSet.add(createDecideToCreateTermEntityDto(termDataDto, language, translatedWord, 1));
-                    } else {
-                        decidableSet.add(createDecideToCreateTermEntityDto(termDataDto, language, translatedWord, 2));
-                    }
+                    ttSet.add(createDecideToCreateTermEntityDto(termDataDto, language, translatedWord));
                 }
             }
             result.put(termDataDto.getTerm(), translatedWord);
         });
         return TermPairDto.builder()
                 .translatedTerms(result)
-                .decidableSet(decidableSet)
+                .ttSet(ttSet)
                 .build();
     }
 
@@ -217,24 +215,21 @@ public class TermManager {
 
     private TranslatedDataDto createdTranslatedDataDto(final String translatedText,
                                                        final Map<String, String> translatedTerms,
-                                                       final Set<DecideToCreateTermEntityDto> decidableSet) {
+                                                       final Set<TermDto.CreateTranslatedTermEntityDto> ttSet) {
         return TranslatedDataDto.builder()
                 .translatedText(translatedText)
                 .translatedTerms(translatedTerms)
-                .decidableSet(decidableSet)
+                .ttSet(ttSet)
                 .build();
     }
 
-    private DecideToCreateTermEntityDto createDecideToCreateTermEntityDto(final TermDataDto termDataDto,
-                                                                          final Language language,
-                                                                          final String translatedWord,
-                                                                          final int choice) {
-        return DecideToCreateTermEntityDto.builder()
+    private TermDto.CreateTranslatedTermEntityDto createDecideToCreateTermEntityDto(final TermDataDto termDataDto,
+                                                                                    final Language language,
+                                                                                    final String translatedWord) {
+        return TermDto.CreateTranslatedTermEntityDto.builder()
                 .word(termDataDto.getTerm())
-                .meaning(termDataDto.getMeaning())
                 .language(language)
                 .translatedWord(translatedWord)
-                .choice(choice)
                 .build();
     }
 }

@@ -23,12 +23,10 @@ public class TermDto {
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class DecideToCreateTermEntityDto {
+    public static class CreateTranslatedTermEntityDto {
         String word;
-        String meaning;
         Language language;
         String translatedWord;
-        int choice; // 1이면 tt만 저장, 2면 t랑 tt 둘다 저장
     }
 
     @Builder
@@ -37,6 +35,6 @@ public class TermDto {
     @AllArgsConstructor
     public static class TermPairDto {
         Map<String, String> translatedTerms;
-        Set<DecideToCreateTermEntityDto> decidableSet;
+        Set<CreateTranslatedTermEntityDto> ttSet;
     }
 }

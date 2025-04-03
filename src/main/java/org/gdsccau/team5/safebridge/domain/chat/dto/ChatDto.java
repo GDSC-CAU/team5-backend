@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.gdsccau.team5.safebridge.domain.term.dto.TermDto;
 import org.gdsccau.team5.safebridge.domain.term.dto.TermDto.DecideToCreateTermEntityDto;
 
 public class ChatDto {
@@ -48,6 +49,6 @@ public class ChatDto {
     public static class TranslatedDataDto {
         String translatedText;
         Map<String, String> translatedTerms;
-        Set<DecideToCreateTermEntityDto> decidableSet;
+        Set<TermDto.CreateTranslatedTermEntityDto> ttSet;
     }
 }
