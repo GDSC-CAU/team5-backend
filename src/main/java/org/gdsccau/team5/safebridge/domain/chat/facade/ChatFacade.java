@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.term.Language;
@@ -112,10 +113,11 @@ public class ChatFacade {
                 .forEach(dto -> {
                     String word = dto.getTerm();
                     String meaning = dto.getMeaning();
+                    termCommandService.createTerm(word, meaning);
                     // TODO UPSERT가 더 좋을까?
-                    if (!termQueryService.existsByWord(word)) {
-                        termCommandService.createTerm(word, meaning);
-                    }
+//                    if (!termQueryService.existsByWord(word)) {
+//                        termCommandService.createTerm(word, meaning);
+//                    }
                 });
     }
 

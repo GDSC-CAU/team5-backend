@@ -14,7 +14,7 @@ public interface TermRepository extends JpaRepository<Term, Long> {
     @Modifying
     @Query(value = "INSERT INTO term (word, meaning) "
             + "VALUES (:word, :meaning) "
-            + "ON DUPLICATE KEY ", nativeQuery = true)
+            + "ON DUPLICATE KEY UPDATE meaning = :meaning", nativeQuery = true)
     void upsertTerm(@Param("word") String word, @Param("meaning") String meaning);
 
     @Query("SELECT t FROM Term t WHERE t.word = :word ORDER BY t.id ASC LIMIT 1")
