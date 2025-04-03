@@ -114,10 +114,6 @@ public class ChatFacade {
                     String word = dto.getTerm();
                     String meaning = dto.getMeaning();
                     termCommandService.createTerm(word, meaning);
-                    // TODO UPSERT가 더 좋을까?
-//                    if (!termQueryService.existsByWord(word)) {
-//                        termCommandService.createTerm(word, meaning);
-//                    }
                 });
     }
 

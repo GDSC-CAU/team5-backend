@@ -1,5 +1,6 @@
 package org.gdsccau.team5.safebridge.domain.user.service;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.term.Language;
@@ -16,6 +17,10 @@ public class UserQueryService {
 
     public User findByUserId(final Long userId) {
         return userRepository.findById(userId).orElse(null);
+    }
+
+    public List<User> findUsersByUserIds(final List<Long> userIds) {
+        return userRepository.findUsersByUserIds(userIds);
     }
 
     public Language findLanguageByUserId(final Long userId) {

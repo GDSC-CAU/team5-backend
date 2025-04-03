@@ -17,10 +17,10 @@ public interface TermRepository extends JpaRepository<Term, Long> {
             + "ON DUPLICATE KEY UPDATE meaning = :meaning", nativeQuery = true)
     void upsertTerm(@Param("word") String word, @Param("meaning") String meaning);
 
-    @Query("SELECT t FROM Term t WHERE t.word = :word ORDER BY t.id ASC LIMIT 1")
+    @Query("SELECT t FROM Term t WHERE t.word = :word")
     Optional<Term> findTermByWord(@Param("word") final String word);
 
-    @Query("SELECT t.id FROM Term t WHERE t.word = :word ORDER BY t.id ASC LIMIT 1")
+    @Query("SELECT t.id FROM Term t WHERE t.word = :word")
     Optional<Long> findTermIdByWord(@Param("word") final String word);
 
     @Query("SELECT count(t) > 0 FROM Term t WHERE t.word = :word")

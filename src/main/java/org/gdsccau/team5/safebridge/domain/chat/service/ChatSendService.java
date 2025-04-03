@@ -1,5 +1,9 @@
 package org.gdsccau.team5.safebridge.domain.chat.service;
 
+import java.time.LocalDateTime;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.redis.RedisManager;
@@ -20,11 +24,6 @@ import org.gdsccau.team5.safebridge.domain.userTeam.service.UserTeamQueryService
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -42,7 +41,7 @@ public class ChatSendService {
     private final SimpMessagingTemplate messagingTemplate;
     private final TermManager termManager;
     private final RedisManager redisManager;
-    private final Set<String> decideIsNewSet = ConcurrentHashMap.newKeySet();
+    private final Set<String> ttSet = ConcurrentHashMap.newKeySet();
 
     public void sendChatMessage(final TermDataWithNewChatDto result, final String name, final Chat chat,
                                 final Long teamId) {
@@ -62,7 +61,8 @@ public class ChatSendService {
             // 처음 번역하는 문장이면 DB에 저장한다.
             createTranslation(language, dto, chat);
             messagingTemplate.convertAndSend(TRANSLATE_SUB_URL + teamId + "/" + userId,
-                    ChatConverter.toTranslatedTextResponseDto(dto.getTranslatedText(), dto.getTranslatedTerms(), chat.getId()));
+                    ChatConverter.toTranslatedTextResponseDto(dto.getTranslatedText(), dto.getTranslatedTerms(),
+                            chat.getId()));
         });
         // TODO 비동기 처리에 대한 예외처리
     }
@@ -94,7 +94,7 @@ public class ChatSendService {
     // TODO 서버가 꺼지면 중복 저장이 됩니다 ㅎㅎ.. 1. UPSERT, 2. Redis, 3. exist 쿼리
     private void createTranslatedTerm(final Language language, final TermDto.CreateTranslatedTermEntityDto data) {
         String isNewTermKey = language + ":" + data.getWord();
-        if (decideIsNewSet.add(isNewTermKey)) {
+        if (ttSet.add(isNewTermKey)) {
             Term term = termQueryService.findTermByWord(data.getWord());
             translatedTermCommandService.createTranslatedTerm(term, data.getLanguage(), data.getTranslatedWord());
         }
@@ -102,7 +102,7 @@ public class ChatSendService {
 
     private void createTranslation(final Language language, final TranslatedDataDto dto, final Chat chat) {
         String isNewChatKey = language + ":" + chat.getId();
-        if (decideIsNewSet.add(isNewChatKey)) {
+        if (ttSet.add(isNewChatKey)) {
             translationCommandService.createTranslation(dto.getTranslatedText(), language, chat.getId());
         }
     }

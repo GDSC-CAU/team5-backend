@@ -1,6 +1,8 @@
 package org.gdsccau.team5.safebridge.domain.userTeam.repository;
 
 import java.sql.PreparedStatement;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.gdsccau.team5.safebridge.domain.userTeam.dto.UserTeamDto.UserTeamUnReadMessageDto;
@@ -14,7 +16,20 @@ public class UserTeamBatchRepository {
 
     private final JdbcTemplate jdbcTemplate;
 
-    @Transactional
+    public void userTeamBatchInsert(final List<Long> userIds, final Long teamId) {
+        String sql = "INSERT INTO user_team (in_room, access_date, un_read_message, user_id, team_id) VALUES (?, ?, ?, ?, ?)";
+        jdbcTemplate.batchUpdate(sql,
+                userIds,
+                userIds.size(),
+                (PreparedStatement ps, Long userId) -> {
+                    ps.setInt(1, 0); // inRoom
+                    ps.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now())); // accessDate
+                    ps.setInt(3, 0); // unReadMessage
+                    ps.setLong(4, userId); // userId
+                    ps.setLong(5, teamId); // teamId
+                });
+    }
+
     public void unReadMessageBatchUpdate(final List<UserTeamUnReadMessageDto> dtos) {
         String sql = "UPDATE user_team SET un_read_message = ? WHERE user_id = ? AND team_id = ?";
         jdbcTemplate.batchUpdate(sql,
