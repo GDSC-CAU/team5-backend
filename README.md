@@ -78,6 +78,8 @@ LinguaTalk은 다국적 노동자들이 한국에 와서 일을 하며 겪는 �
 </table>
 
 ### 시스템 아키텍처
+![image](https://github.com/user-attachments/assets/22e86af6-1cd2-4188-89df-09eb71596073)
+
 
 ### 기술/스택
 <img src="https://img.shields.io/badge/React-61DAFB?style=flat&logo=React&logoColor=white"/> <img src="https://img.shields.io/badge/ESLint-4B32C3?style=flat&logo=ESLint&logoColor=white"/> <img src="https://img.shields.io/badge/Prettier-F7B93E?style=flat&logo=Prettier&logoColor=white"/> <img src="https://img.shields.io/badge/Axios-5A29E4?style=flat&logo=Axios&logoColor=white"/>
@@ -87,6 +89,7 @@ LinguaTalk은 다국적 노동자들이 한국에 와서 일을 하며 겪는 �
 
 
 ### 협업  
-[<img src="https://img.shields.io/badge/GitHub-181717?style=flat&logo=GitHub&logoColor=white" />](https://github.com/CAU-CSE-24-02-Capstone-Design)
-<img src="https://img.shields.io/badge/Notion-000000?style=flat&logo=Notion&logoColor=white" />
+[<img src="https://img.shields.io/badge/GitHub-181717?style=flat&logo=GitHub&logoColor=white" />](https://github.com/GDSC-CAU/team5-backend)
+[<img src="https://img.shields.io/badge/GitHub-181717?style=flat&logo=GitHub&logoColor=white" />](https://github.com/GDSC-CAU/team5-FE)
+[<img src="https://img.shields.io/badge/Notion-000000?style=flat&logo=Notion&logoColor=white" />](https://bingle625.notion.site/GDG-16e884521b408017aa70c154c0e5eda4?pvs=4)
 
