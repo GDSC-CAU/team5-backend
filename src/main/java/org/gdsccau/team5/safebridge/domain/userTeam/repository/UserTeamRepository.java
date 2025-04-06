@@ -45,7 +45,7 @@ public interface UserTeamRepository extends JpaRepository<UserTeam, Long> {
     Optional<Integer> findUnReadMessageByUserIdAndTeamId(@Param("userId") final Long userId,
                                                          @Param("teamId") final Long teamId);
 
-    @Query("SELECT new org.gdsccau.team5.safebridge.domain.team.dto.TeamDto$TeamOrderDto(ut.user.id, ut.team.id, h.lastChatTime) "
+    @Query("SELECT new org.gdsccau.team5.safebridge.domain.team.dto.TeamDto$TeamOrderDto(ut.user.id, ut.team.id, coalesce(h.lastChatTime, ut.createdAt)) "
             + "FROM UserTeam ut "
             + "LEFT JOIN ( "
             + "     SELECT c.team.id AS teamId, MAX(c.createdAt) AS lastChatTime "
