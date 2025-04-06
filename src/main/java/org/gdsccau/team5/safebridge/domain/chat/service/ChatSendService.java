@@ -1,9 +1,10 @@
 package org.gdsccau.team5.safebridge.domain.chat.service;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.time.LocalDateTime;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.redis.RedisManager;
@@ -41,7 +42,15 @@ public class ChatSendService {
     private final SimpMessagingTemplate messagingTemplate;
     private final TermManager termManager;
     private final RedisManager redisManager;
-    private final Set<String> ttSet = ConcurrentHashMap.newKeySet();
+    private final Cache<String, Boolean> translatedTermCache = Caffeine.newBuilder()
+            .expireAfterWrite(10, TimeUnit.SECONDS)
+            .build();
+    private final Cache<String, Boolean> translationCache = Caffeine.newBuilder()
+            .expireAfterWrite(10, TimeUnit.SECONDS)
+            .build();
+    private final Cache<String, CompletableFuture<TranslatedDataDto>> translationAPICache = Caffeine.newBuilder()
+            .expireAfterWrite(10, TimeUnit.SECONDS)
+            .build();
 
     public void sendChatMessage(final TermDataWithNewChatDto result, final String name, final Chat chat,
                                 final Long teamId) {
@@ -51,14 +60,11 @@ public class ChatSendService {
 
     public void sendTranslatedMessage(final TermDataWithNewChatDto result, final Language language, final Chat chat,
                                       final Long teamId, final Long userId) {
-        CompletableFuture<TranslatedDataDto> translatedData = termManager.translate(result.getNewChat(),
-                result.getTerms(), language);
-        translatedData.thenAccept(dto -> {
-            dto.getTtSet().forEach(data -> {
-                // 처음으로 번역하는 현장 용어면 DB에 저장한다.
-                createTranslatedTerm(language, data);
-            });
-            // 처음 번역하는 문장이면 DB에 저장한다.
+        String translationCacheKey = language + ":" + chat.getId();
+        CompletableFuture<TranslatedDataDto> future = translationAPICache.get(translationCacheKey, key ->
+                termManager.translate(result.getNewChat(), result.getTerms(), language));
+        future.thenAccept(dto -> {
+            dto.getTtSet().forEach(data -> createTranslatedTerm(language, data));
             createTranslation(language, dto, chat);
             messagingTemplate.convertAndSend(TRANSLATE_SUB_URL + teamId + "/" + userId,
                     ChatConverter.toTranslatedTextResponseDto(dto.getTranslatedText(), dto.getTranslatedTerms(),
@@ -91,10 +97,9 @@ public class ChatSendService {
         );
     }
 
-    // TODO 서버가 꺼지면 중복 저장이 됩니다 ㅎㅎ.. 1. UPSERT, 2. Redis, 3. exist 쿼리
     private void createTranslatedTerm(final Language language, final TermDto.CreateTranslatedTermEntityDto data) {
         String isNewTermKey = language + ":" + data.getWord();
-        if (ttSet.add(isNewTermKey)) {
+        if (translatedTermCache.asMap().putIfAbsent(isNewTermKey, true) == null) {
             Term term = termQueryService.findTermByWord(data.getWord());
             translatedTermCommandService.createTranslatedTerm(term, data.getLanguage(), data.getTranslatedWord());
         }
@@ -102,7 +107,7 @@ public class ChatSendService {
 
     private void createTranslation(final Language language, final TranslatedDataDto dto, final Chat chat) {
         String isNewChatKey = language + ":" + chat.getId();
-        if (ttSet.add(isNewChatKey)) {
+        if (translationCache.asMap().putIfAbsent(isNewChatKey, true) == null) {
             translationCommandService.createTranslation(dto.getTranslatedText(), language, chat.getId());
         }
     }
