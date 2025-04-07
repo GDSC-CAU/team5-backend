@@ -3,6 +3,7 @@ package org.gdsccau.team5.safebridge.domain.translatedTerm.repository;
 import java.util.List;
 import java.util.Optional;
 import org.gdsccau.team5.safebridge.common.term.Language;
+import org.gdsccau.team5.safebridge.domain.translatedTerm.dto.TranslatedTermDto.TranslatedWordAndLanguageDto;
 import org.gdsccau.team5.safebridge.domain.translatedTerm.dto.TranslatedTermDto.TranslatedWordAndTermIdDto;
 import org.gdsccau.team5.safebridge.domain.translatedTerm.entity.TranslatedTerm;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,7 +22,8 @@ public interface TranslatedTermRepository extends JpaRepository<TranslatedTerm, 
                               @Param("termId") Long termId);
 
     @Query("SELECT tt.word FROM TranslatedTerm tt WHERE tt.language = :language AND tt.term.id = :termId")
-    Optional<String> findTranslatedWordByLanguageAndTermId(@Param("language") final Language language, @Param("termId") final Long termId);
+    Optional<String> findTranslatedWordByLanguageAndTermId(@Param("language") final Language language,
+                                                           @Param("termId") final Long termId);
 
     @Query("SELECT count(tt) > 0 FROM TranslatedTerm tt WHERE tt.language = :language AND tt.term.id = :termId")
     Boolean existsByLanguageAndTermId(@Param("language") final Language language, @Param("termId") final Long termId);
@@ -29,5 +31,14 @@ public interface TranslatedTermRepository extends JpaRepository<TranslatedTerm, 
     @Query("SELECT new org.gdsccau.team5.safebridge.domain.translatedTerm.dto.TranslatedTermDto$TranslatedWordAndTermIdDto (tt.word, tt.term.id) "
             + "FROM TranslatedTerm tt "
             + "WHERE tt.language = :language AND tt.term.id IN :termIds")
-    List<TranslatedWordAndTermIdDto> findTranslatedTermsByLanguageAndTermIds(@Param("language") final Language language, @Param("termIds") final List<Long> termIds);
+    List<TranslatedWordAndTermIdDto> findTranslatedTermsByLanguageAndTermIds(@Param("language") final Language language,
+                                                                             @Param("termIds") final List<Long> termIds);
+
+    @Query("SELECT new org.gdsccau.team5.safebridge.domain.translatedTerm.dto.TranslatedTermDto$TranslatedWordAndLanguageDto (tt.word, tt.language) "
+            + "FROM TranslatedTerm tt "
+            + "WHERE tt.language IN :languages AND tt.term.id = :termId")
+    List<TranslatedWordAndLanguageDto> findTranslatedTermsByLanguagesAndTermId(
+            @Param("languages") final List<Language> languages,
+            @Param("termId") final Long termId);
+
 }

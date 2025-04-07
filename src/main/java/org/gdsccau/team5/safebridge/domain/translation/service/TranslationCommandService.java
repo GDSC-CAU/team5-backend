@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.term.Language;
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
 import org.gdsccau.team5.safebridge.domain.chat.service.ChatQueryService;
-import org.gdsccau.team5.safebridge.domain.translation.TranslationRepository;
+import org.gdsccau.team5.safebridge.domain.translation.repository.TranslationRepository;
 import org.gdsccau.team5.safebridge.domain.translation.entity.Translation;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

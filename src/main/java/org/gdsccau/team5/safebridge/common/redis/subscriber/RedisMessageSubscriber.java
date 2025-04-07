@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.gdsccau.team5.safebridge.common.term.Language;
 import org.gdsccau.team5.safebridge.domain.term.dto.TermDto.TermIdAndWordDto;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class RedisMessageSubscriber implements MessageListener {
 
     private final TermQueryService termQueryService;
@@ -31,10 +33,12 @@ public class RedisMessageSubscriber implements MessageListener {
     @Async("threadPoolTaskExecutor")
     @Override
     public void onMessage(Message message, byte[] pattern) {
+        log.info("Redis Subscribe !!");
         Map<String, Double> hotTermMap = calculateHotTerm();
-        Map<String, Language> wordLanguageMap = getWordLanguageMap(hotTermMap);
+        Map<String, List<Language>> wordLanguageMap = getWordLanguageMap(hotTermMap);
         List<TermIdAndWordDto> termIdAndWordDtos = getAllTermIdAndWords(hotTermMap);
         updateHotTermInLocalCache(wordLanguageMap, termIdAndWordDtos);
+        log.info("Hot Term Warming !!");
     }
 
     private Map<String, Double> calculateHotTerm() {
@@ -77,10 +81,9 @@ public class RedisMessageSubscriber implements MessageListener {
 
             for (Map.Entry<Object, Object> entry : findCountHash.entrySet()) {
                 String field = entry.getKey().toString();
-                Integer count = (Integer) entry.getValue();
+                Integer count = Integer.parseInt(entry.getValue().toString());
                 Double countWeight = a * Math.pow(1 - r, i);
                 Double findCountScore = countWeight * count;
-
                 totalScoreMap.computeIfPresent(field, (k, v) -> v + findCountScore);
             }
         }
@@ -99,14 +102,14 @@ public class RedisMessageSubscriber implements MessageListener {
                 ));
     }
 
-    private Map<String, Language> getWordLanguageMap(final Map<String, Double> map) {
-        Map<String, Language> wordLanguageMap = new HashMap<>();
+    private Map<String, List<Language>> getWordLanguageMap(final Map<String, Double> map) {
+        Map<String, List<Language>> wordMap = new HashMap<>();
         map.forEach((k, v) -> {
             String word = k.split(":")[0];
             Language language = Language.valueOf(k.split(":")[1]);
-            wordLanguageMap.put(word, language);
+            wordMap.computeIfAbsent(word, key -> new ArrayList<>()).add(language);
         });
-        return wordLanguageMap;
+        return wordMap;
     }
 
     private List<String> getAllWords(final Map<String, Double> map) {
@@ -123,17 +126,18 @@ public class RedisMessageSubscriber implements MessageListener {
         return termQueryService.findTermIdAndWord(words);
     }
 
-    private void updateHotTermInLocalCache(final Map<String, Language> wordLanguageMap,
+    private void updateHotTermInLocalCache(final Map<String, List<Language>> wordLanguageMap,
                                            final List<TermIdAndWordDto> termIdAndWordDtos) {
         // TODO IN 절로 쿼리 1번에 다 가져오고 싶은데, 쉽지 않네;
-        termIdAndWordDtos
-                .forEach(dto -> {
-                    Long termId = dto.getTermId();
-                    String word = dto.getWord();
-                    Language language = wordLanguageMap.get(word);
-                    String translatedWord = translatedTermQueryService.findTranslatedWordByLanguageAndTermId(language,
-                            termId);
-                    termCacheCommandService.updateTerm(word, language, translatedWord);
-                });
+        termIdAndWordDtos.forEach(dto -> {
+            Long termId = dto.getTermId();
+            String word = dto.getWord();
+            List<Language> languages = wordLanguageMap.get(word);
+            translatedTermQueryService.findTranslatedWordsByLanguagesAndTermId(languages, termId).forEach(data -> {
+                String translatedWord = data.getTranslatedWord();
+                Language language = data.getLanguage();
+                termCacheCommandService.updateTerm(word, language, translatedWord);
+            });
+        });
     }
 }

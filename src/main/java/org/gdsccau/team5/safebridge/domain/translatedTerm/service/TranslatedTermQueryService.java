@@ -4,6 +4,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.term.Language;
+import org.gdsccau.team5.safebridge.domain.translatedTerm.dto.TranslatedTermDto.TranslatedWordAndLanguageDto;
 import org.gdsccau.team5.safebridge.domain.translatedTerm.dto.TranslatedTermDto.TranslatedWordAndTermIdDto;
 import org.gdsccau.team5.safebridge.domain.translatedTerm.repository.TranslatedTermRepository;
 import org.springframework.stereotype.Service;
@@ -23,7 +24,13 @@ public class TranslatedTermQueryService {
         return translatedTermRepository.existsByLanguageAndTermId(language, termId);
     }
 
-    public List<TranslatedWordAndTermIdDto> findTranslatedWordsByLanguageAndTermIds(final Language language, final List<Long> termIds) {
+    public List<TranslatedWordAndTermIdDto> findTranslatedWordsByLanguageAndTermIds(final Language language,
+                                                                                    final List<Long> termIds) {
         return translatedTermRepository.findTranslatedTermsByLanguageAndTermIds(language, termIds);
+    }
+
+    public List<TranslatedWordAndLanguageDto> findTranslatedWordsByLanguagesAndTermId(final List<Language> languages,
+                                                                                      final Long termId) {
+        return translatedTermRepository.findTranslatedTermsByLanguagesAndTermId(languages, termId);
     }
 }

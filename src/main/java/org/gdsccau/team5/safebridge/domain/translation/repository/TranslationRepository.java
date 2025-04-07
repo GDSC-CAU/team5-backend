@@ -1,4 +1,4 @@
-package org.gdsccau.team5.safebridge.domain.translation;
+package org.gdsccau.team5.safebridge.domain.translation.repository;
 
 
 import java.util.Optional;

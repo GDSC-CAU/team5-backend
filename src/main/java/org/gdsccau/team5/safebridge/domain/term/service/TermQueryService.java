@@ -19,14 +19,6 @@ public class TermQueryService {
         return termRepository.findTermByWord(word).orElse(null);
     }
 
-    public Long findTermIdByWord(final String word) {
-        return termRepository.findTermIdByWord(word).orElse(null);
-    }
-
-    public boolean existsByWord(final String word) {
-        return termRepository.existsByWord(word);
-    }
-
     public List<TermIdAndWordDto> findTermIdAndWord(final List<String> words) {
         return termRepository.findTermIdAndWordByWords(words);
     }
