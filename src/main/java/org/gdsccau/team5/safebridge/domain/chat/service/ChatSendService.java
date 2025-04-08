@@ -58,17 +58,17 @@ public class ChatSendService {
                 ChatConverter.toChatResponseDto(name, chat, result.getTerms()));
     }
 
-    public void sendTranslatedMessage(final TermDataWithNewChatDto result, final Language language, final Chat chat,
-                                      final Long teamId, final Long userId) {
-        String translationCacheKey = language + ":" + chat.getId();
+    public void sendTranslatedMessage(final TermDataWithNewChatDto result, final Language language,
+                                      final Long chatId, final Long teamId, final Long userId) {
+        String translationCacheKey = language + ":" + chatId;
         CompletableFuture<TranslatedDataDto> future = translationAPICache.get(translationCacheKey, key ->
                 termManager.translate(result.getNewChat(), result.getTerms(), language));
         future.thenAccept(dto -> {
             dto.getTtSet().forEach(data -> createTranslatedTerm(language, data));
-            createTranslation(language, dto, chat);
+            createTranslation(language, dto, chatId);
             messagingTemplate.convertAndSend(TRANSLATE_SUB_URL + teamId + "/" + userId,
                     ChatConverter.toTranslatedTextResponseDto(dto.getTranslatedText(), dto.getTranslatedTerms(),
-                            chat.getId()));
+                            chatId));
         });
         // TODO 비동기 처리에 대한 예외처리
     }
@@ -91,8 +91,8 @@ public class ChatSendService {
         }
         redisManager.updateTeamList(teamListKey, teamId, chat);
 
-        return createTeamListDto(
-                teamId, chat.getText(), chat.getCreatedAt(), redisManager.getUnReadMessageOrDefault(unReadMessageKey,
+        return createTeamListDto(teamId, chat.getText(), chat.getCreatedAt(),
+                redisManager.getUnReadMessageOrDefault(unReadMessageKey,
                         () -> userTeamQueryService.findUnReadMessageByUserIdAndTeamId(userId, teamId))
         );
     }
@@ -105,10 +105,10 @@ public class ChatSendService {
         }
     }
 
-    private void createTranslation(final Language language, final TranslatedDataDto dto, final Chat chat) {
-        String isNewChatKey = language + ":" + chat.getId();
+    private void createTranslation(final Language language, final TranslatedDataDto dto, final Long chatId) {
+        String isNewChatKey = language + ":" + chatId;
         if (translationCache.asMap().putIfAbsent(isNewChatKey, true) == null) {
-            translationCommandService.createTranslation(dto.getTranslatedText(), language, chat.getId());
+            translationCommandService.createTranslation(dto.getTranslatedText(), language, chatId);
         }
     }
 

@@ -13,12 +13,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-@Transactional
 public class TranslationCommandService {
 
     private final ChatQueryService chatQueryService;
     private final TranslationRepository translationRepository;
 
+    @Transactional
     public void createTranslation(final String text, final Language language, final Long chatId) {
         Chat chat = chatQueryService.findChatById(chatId);
         Translation translation = Translation.builder()

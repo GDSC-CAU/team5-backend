@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.term.Language;
@@ -67,13 +66,12 @@ public class ChatFacade {
         // 채팅방에 속한 모든 사용자에 대해 번역 데이터를 전송하고 채팅방 순서를 갱신한다.
         dtos.forEach(dto -> {
             Language language = dto.getLanguage();
-            chatSendService.sendTranslatedMessage(result, language, chat, teamId, dto.getUserId());
+            chatSendService.sendTranslatedMessage(result, language, chat.getId(), teamId, dto.getUserId());
             chatSendService.sendTeamData(chat, teamId, dto.getUserId());
         });
 
         // 현장용어를 위한 Local Cache 업데이트
-        termMetaDataCommandService.updateTermMetaDataInLocalCache(result.getTerms(), getLanguageSet(dtos),
-                chat.getCreatedAt());
+        termMetaDataCommandService.updateTermMetaDataInLocalCache(result.getTerms(), getLanguageSet(dtos));
     }
 
     @Transactional

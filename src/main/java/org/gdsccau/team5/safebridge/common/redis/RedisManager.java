@@ -62,10 +62,6 @@ public class RedisManager {
         return redisTeamListManager.getTeamList(teamListKey);
     }
 
-    public Set<ZSetOperations.TypedTuple<String>> getTermFindTimeZSet(final LocalDateTime findTime) {
-        return redisTermManager.getTermFindTimeZSet(findTime);
-    }
-
     public Map<Object, Object> getTermFindCount(final LocalDateTime chatTime) {
         return redisTermManager.getTermFindCount(chatTime);
     }
@@ -85,10 +81,6 @@ public class RedisManager {
     // TODO Warming 할 때 TTL 갱신을 해야할까? + TTL과 Warming 주기의 관계에 대해서 고민!
     public void updateTeamList(final String teamListKey, final Long teamId, final LocalDateTime lastChatTime) {
         redisTeamListManager.updateTeamList(teamListKey, teamId, lastChatTime);
-    }
-
-    public void updateTermFindTimeZSet(final String member, final LocalDateTime chatTime) {
-        redisTermManager.updateTermFindTimeZSet(member, chatTime);
     }
 
     public void updateTermFindCountHash(final String field, final Integer count, final String findCountHashKey) {

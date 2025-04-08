@@ -9,10 +9,12 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.gdsccau.team5.safebridge.common.cache.CacheType;
 import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.gdsccau.team5.safebridge.common.term.Language;
 import org.gdsccau.team5.safebridge.domain.term.dto.TermDto.TermIdAndWordDto;
 import org.gdsccau.team5.safebridge.domain.term.service.TermCacheCommandService;
+import org.gdsccau.team5.safebridge.domain.term.service.TermCacheQueryService;
 import org.gdsccau.team5.safebridge.domain.term.service.TermQueryService;
 import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermQueryService;
 import org.springframework.data.redis.connection.Message;
@@ -27,6 +29,7 @@ public class RedisMessageSubscriber implements MessageListener {
 
     private final TermQueryService termQueryService;
     private final TranslatedTermQueryService translatedTermQueryService;
+    private final TermCacheQueryService termCacheQueryService;
     private final TermCacheCommandService termCacheCommandService;
     private final RedisManager redisManager;
 
@@ -43,38 +46,14 @@ public class RedisMessageSubscriber implements MessageListener {
 
     private Map<String, Double> calculateHotTerm() {
         LocalDateTime currentTime = LocalDateTime.now();
-        Map<String, Double> totalScoreMap = initTotalScoreMap(currentTime);
-        calculateTermFindCount(totalScoreMap, currentTime);
+        Map<String, Double> totalScoreMap = calculateTermFindCount(currentTime);
         return getTop100Term(totalScoreMap);
     }
 
-    private Map<String, Double> getTermFindTimeMemberWithScore(final LocalDateTime currentTime) {
-        Map<String, Double> map = new HashMap<>();
-        redisManager.getTermFindTimeZSet(currentTime).forEach(tuple -> {
-            String member = tuple.getValue();
-            Double score = tuple.getScore();
-            map.put(member, score);
-        });
-        return map;
-    }
-
-    private Map<String, Double> initTotalScoreMap(final LocalDateTime currentTime) {
-        double findTimeWeight = 0.01; // TODO 몇으로 해야할까?
-        Map<String, Double> termFindTimeMap = getTermFindTimeMemberWithScore(currentTime);
+    private Map<String, Double> calculateTermFindCount(final LocalDateTime currentTime) {
         Map<String, Double> totalScoreMap = new HashMap<>();
-
-        for (Map.Entry<String, Double> entry : termFindTimeMap.entrySet()) {
-            String field = entry.getKey();
-            Double lastFindTimeScore = entry.getValue();
-            totalScoreMap.putIfAbsent(field, lastFindTimeScore * findTimeWeight);
-        }
-        return totalScoreMap;
-    }
-
-    private void calculateTermFindCount(Map<String, Double> totalScoreMap, final LocalDateTime currentTime) {
         int a = 1;
         double r = 0.1;
-
         for (int i = 0; i < 24; i++) {
             LocalDateTime hourTime = currentTime.minusHours(i);
             Map<Object, Object> findCountHash = redisManager.getTermFindCount(hourTime);
@@ -84,9 +63,11 @@ public class RedisMessageSubscriber implements MessageListener {
                 Integer count = Integer.parseInt(entry.getValue().toString());
                 Double countWeight = a * Math.pow(1 - r, i);
                 Double findCountScore = countWeight * count;
+                totalScoreMap.putIfAbsent(field, findCountScore);
                 totalScoreMap.computeIfPresent(field, (k, v) -> v + findCountScore);
             }
         }
+        return totalScoreMap;
     }
 
     private Map<String, Double> getTop100Term(Map<String, Double> originalMap) {
@@ -126,8 +107,20 @@ public class RedisMessageSubscriber implements MessageListener {
         return termQueryService.findTermIdAndWord(words);
     }
 
+    private void deleteHotTermInLocalCache(final Map<Object, Object> cacheEntriesForCount) {
+        cacheEntriesForCount.forEach((k, v) -> {
+            String key = (String) k;
+            termCacheCommandService.deleteTerm(key);
+        });
+    }
+
     private void updateHotTermInLocalCache(final Map<String, List<Language>> wordLanguageMap,
                                            final List<TermIdAndWordDto> termIdAndWordDtos) {
+        // 기존 Local Cache 비우기
+        Map<Object, Object> cacheEntriesForCount = termCacheQueryService.getAllKeyAndValueInCache(
+                CacheType.HOT_TERM.getCacheName());
+        deleteHotTermInLocalCache(cacheEntriesForCount);
+
         // TODO IN 절로 쿼리 1번에 다 가져오고 싶은데, 쉽지 않네;
         termIdAndWordDtos.forEach(dto -> {
             Long termId = dto.getTermId();

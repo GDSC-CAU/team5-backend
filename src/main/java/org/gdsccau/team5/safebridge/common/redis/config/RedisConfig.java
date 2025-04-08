@@ -3,6 +3,7 @@ package org.gdsccau.team5.safebridge.common.redis.config;
 import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.gdsccau.team5.safebridge.common.redis.subscriber.RedisMessageSubscriber;
 import org.gdsccau.team5.safebridge.domain.term.service.TermCacheCommandService;
+import org.gdsccau.team5.safebridge.domain.term.service.TermCacheQueryService;
 import org.gdsccau.team5.safebridge.domain.term.service.TermQueryService;
 import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermQueryService;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,10 +54,11 @@ public class RedisConfig {
     @Bean
     public MessageListenerAdapter messageListenerAdapter(RedisManager redisManager, TermQueryService termQueryService,
                                                          TranslatedTermQueryService translatedTermQueryService,
-                                                         TermCacheCommandService termCacheCommandService) {
+                                                         TermCacheCommandService termCacheCommandService,
+                                                         TermCacheQueryService termCacheQueryService) {
         return new MessageListenerAdapter(
-                new RedisMessageSubscriber(termQueryService, translatedTermQueryService, termCacheCommandService,
-                        redisManager));
+                new RedisMessageSubscriber(termQueryService, translatedTermQueryService, termCacheQueryService,
+                        termCacheCommandService, redisManager));
     }
 
     @Bean

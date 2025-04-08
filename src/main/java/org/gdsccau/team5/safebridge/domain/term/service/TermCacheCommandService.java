@@ -21,11 +21,6 @@ public class TermCacheCommandService {
         return translatedWord;
     }
 
-    @CachePut(value = "term", key = "#key")
-    public String updateTerm(final String key, final String translatedWord) {
-        return translatedWord;
-    }
-
     @CachePut(value = "findCount", key = "#word + ':' + #language.name()")
     public String updateFindCount(final String word, final Language language) {
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMddHH");
@@ -39,23 +34,13 @@ public class TermCacheCommandService {
         return newFindCount + ":" + currentTime;
     }
 
-    @CachePut(value = "findTime", key = "#word + ':' + #language.name()")
-    public String updateFindTime(final String word, final Language language, final LocalDateTime chatTime) {
-        return chatTime.toString();
-    }
-
-    @CacheEvict(value = "term", key = "#word + ':' + #language.name()")
-    public void deleteTerm(final String word, final Language language) {
+    @CacheEvict(value = "term", key = "#key")
+    public void deleteTerm(final String key) {
 
     }
 
     @CacheEvict(value = "findCount", key = "#key")
     public void deleteFindCount(final String key) {
-
-    }
-
-    @CacheEvict(value = "findTime", key = "#key")
-    public void deleteFindTime(final String key) {
 
     }
 }

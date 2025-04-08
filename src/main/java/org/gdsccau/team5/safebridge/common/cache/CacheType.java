@@ -7,7 +7,7 @@ public enum CacheType {
 
     TERM_FIND_COUNT("findCount"),
     TERM_FIND_TIME("findTime"),
-    TERM_TRANSLATION("term");
+    HOT_TERM("term");
 
     private final String cacheName;
     private final Integer expiredAfterWrite;
