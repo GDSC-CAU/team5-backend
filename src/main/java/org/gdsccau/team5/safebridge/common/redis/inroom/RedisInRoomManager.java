@@ -17,7 +17,7 @@ public class RedisInRoomManager {
     private final RedisTemplate<String, String> redisTemplate;
 
     public void initInRoom(final String inRoomKey) {
-        redisTemplate.opsForValue().set(inRoomKey, "0", RedisUtil.TTL, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(inRoomKey, "0", RedisUtil.TTL, TimeUnit.HOURS);
     }
 
     public String getInRoomKey(final Long userId, final Long teamId) {
@@ -35,10 +35,12 @@ public class RedisInRoomManager {
 
     public void updateInRoomWhenJoin(final String inRoomKey) {
         redisTemplate.opsForValue().set(inRoomKey, "1");
+        redisTemplate.expire(inRoomKey, RedisUtil.TTL, TimeUnit.HOURS);
     }
 
     public void updateInRoomWhenLeave(final String inRoomKey) {
         redisTemplate.opsForValue().set(inRoomKey, "0");
+        redisTemplate.expire(inRoomKey, RedisUtil.TTL, TimeUnit.HOURS);
     }
 
     public void deleteInRoom(final String inRoomKey) {
@@ -56,5 +58,6 @@ public class RedisInRoomManager {
 
     private void updateInRoom(final String inRoomKey, final int inRoom) {
         redisTemplate.opsForValue().set(inRoomKey, String.valueOf(inRoom));
+        redisTemplate.expire(inRoomKey, RedisUtil.TTL, TimeUnit.HOURS);
     }
 }

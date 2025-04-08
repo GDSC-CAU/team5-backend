@@ -9,20 +9,19 @@ import org.gdsccau.team5.safebridge.domain.chat.service.ChatQueryService;
 import org.gdsccau.team5.safebridge.domain.team.dto.response.TeamResponseDto.TeamListDto;
 import org.gdsccau.team5.safebridge.domain.team.service.TeamQueryService;
 import org.gdsccau.team5.safebridge.domain.userTeam.service.UserTeamQueryService;
-import org.gdsccau.team5.safebridge.domain.userTeam.service.UserTeamCommandService;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
 public class UserTeamFacade {
 
-    private final UserTeamCommandService userTeamCommandService;
     private final UserTeamQueryService userTeamQueryService;
     private final TeamQueryService teamQueryService;
     private final ChatQueryService chatQueryService;
     private final RedisManager redisManager;
 
     public List<TeamListDto> findAllTeamDataByUserId(final Long userId) {
+        // TODO Redis에 없으면 DB를 조회한다.
         String teamListKey = redisManager.getTeamListKey(userId);
         return Objects.requireNonNull(redisManager.getTeamList(teamListKey)).stream()
                 .map(Long::parseLong)

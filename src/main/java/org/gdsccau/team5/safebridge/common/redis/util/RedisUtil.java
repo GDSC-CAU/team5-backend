@@ -6,7 +6,7 @@ import java.time.format.DateTimeFormatter;
 
 public class RedisUtil {
 
-    public final static Integer TTL = 6;
+    public final static Integer TTL = 9;
     public final static String FULL_DATE_FORMAT = "yyyyMMddHHmmssSSS";
     public final static String HOUR_DATE_FORMAT = "yyyyMMddHH";
 

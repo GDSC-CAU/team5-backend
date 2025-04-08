@@ -20,7 +20,7 @@ public class RedisTeamListManager {
     public void initTeamList(final String teamListKey, final Long teamId) {
         Double score = RedisUtil.convertToDateFormat(RedisUtil.FULL_DATE_FORMAT, LocalDateTime.now());
         redisTemplate.opsForZSet().add(teamListKey, String.valueOf(teamId), score);
-        redisTemplate.expire(teamListKey, RedisUtil.TTL, TimeUnit.MINUTES);
+        redisTemplate.expire(teamListKey, RedisUtil.TTL, TimeUnit.HOURS);
     }
 
     public String getTeamListKey(final Long userId) {
@@ -34,7 +34,7 @@ public class RedisTeamListManager {
     public void updateTeamList(final String teamListKey, final Long teamId, final Chat chat) {
         Double score = RedisUtil.convertToDateFormat(RedisUtil.FULL_DATE_FORMAT, chat.getCreatedAt());
         redisTemplate.opsForZSet().add(teamListKey, String.valueOf(teamId), score);
-        redisTemplate.expire(teamListKey, RedisUtil.TTL, TimeUnit.MINUTES);
+        redisTemplate.expire(teamListKey, RedisUtil.TTL, TimeUnit.HOURS);
     }
 
     // TODO Warming 할 때 TTL 갱신을 해야할까? + TTL과 Warming 주기의 관계에 대해서 고민!

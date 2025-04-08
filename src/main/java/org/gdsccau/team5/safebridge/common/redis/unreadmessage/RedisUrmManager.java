@@ -20,7 +20,7 @@ public class RedisUrmManager {
     private final RedisTemplate<String, String> redisTemplate;
 
     public void initUnReadMessage(final String unReadMessageKey) {
-        redisTemplate.opsForValue().set(unReadMessageKey, "0", RedisUtil.TTL, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(unReadMessageKey, "0", RedisUtil.TTL, TimeUnit.HOURS);
     }
 
     public String getUnReadMessageKey(final Long userId, final Long teamId) {
@@ -57,10 +57,12 @@ public class RedisUrmManager {
 
     public void updateUnReadMessage(final String unReadMessageKey) {
         redisTemplate.opsForValue().increment(unReadMessageKey, 1);
+        redisTemplate.expire(unReadMessageKey, RedisUtil.TTL, TimeUnit.HOURS);
     }
 
     public void updateUnReadMessageWhenJoinAndLeave(final String unReadMessageKey) {
         redisTemplate.opsForValue().set(unReadMessageKey, "0");
+        redisTemplate.expire(unReadMessageKey, RedisUtil.TTL, TimeUnit.HOURS);
     }
 
     public void updateUnReadMessageDirtySet(final Long userId, final Long teamId) {
@@ -88,5 +90,6 @@ public class RedisUrmManager {
 
     private void updateUnReadMessage(final String unReadMessageKey, final int unReadMessage) {
         redisTemplate.opsForValue().set(unReadMessageKey, String.valueOf(unReadMessage));
+        redisTemplate.expire(unReadMessageKey, RedisUtil.TTL, TimeUnit.HOURS);
     }
 }
