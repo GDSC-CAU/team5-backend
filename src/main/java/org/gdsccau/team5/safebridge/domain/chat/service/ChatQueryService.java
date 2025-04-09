@@ -2,6 +2,7 @@ package org.gdsccau.team5.safebridge.domain.chat.service;
 
 import java.util.List;
 import java.util.Optional;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.code.error.ChatErrorCode;
@@ -40,10 +41,8 @@ public class ChatQueryService {
         Pageable pageable = PageRequest.of(0, 1);
         Optional<ChatMetaDataDto> chatMetaDataDto = chatRepository.findChatMetaDataDtoByTeamId(teamId, pageable)
                 .getContent().stream().findFirst();
-        return chatMetaDataDto.orElseGet(() -> ChatMetaDataDto.builder()
-                .lastChat(null)
-                .lastChatTime(null)
-                .build());
+        this.validateChatData(chatMetaDataDto.get());
+        return chatMetaDataDto.get();
     }
 
     @Transactional(readOnly = true)
@@ -60,11 +59,19 @@ public class ChatQueryService {
 
     @Transactional(readOnly = true)
     public List<WorkResponseDto> findAllWorks(final List<Long> teamIds) {
-        return chatRepository.findAllWorksByTeamIds(teamIds);
+        List<WorkResponseDto> dtos = chatRepository.findAllWorksByTeamIds(teamIds);
+        this.validateChatData(dtos);
+        return dtos;
     }
 
     private <T> void validateChatData(final T data) {
         if (data == null) {
+            throw new ExceptionHandler(ChatErrorCode.CHAT_NOT_FOUND);
+        }
+    }
+
+    private <T> void validateChatData(final List<T> data) {
+        if (data.isEmpty()) {
             throw new ExceptionHandler(ChatErrorCode.CHAT_NOT_FOUND);
         }
     }

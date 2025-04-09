@@ -1,8 +1,11 @@
 package org.gdsccau.team5.safebridge.domain.translatedTerm.service;
 
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.gdsccau.team5.safebridge.common.code.error.TranslatedTermErrorCode;
+import org.gdsccau.team5.safebridge.common.exception.handler.ExceptionHandler;
 import org.gdsccau.team5.safebridge.common.term.Language;
 import org.gdsccau.team5.safebridge.domain.translatedTerm.dto.TranslatedTermDto.TranslatedWordAndLanguageDto;
 import org.gdsccau.team5.safebridge.domain.translatedTerm.dto.TranslatedTermDto.TranslatedWordAndTermIdDto;
@@ -19,23 +22,43 @@ public class TranslatedTermQueryService {
 
     @Transactional(readOnly = true)
     public String findTranslatedWordByLanguageAndTermId(final Language language, final Long termId) {
-        return translatedTermRepository.findTranslatedWordByLanguageAndTermId(language, termId).orElse(null);
+        String word = translatedTermRepository.findTranslatedWordByLanguageAndTermId(language, termId).orElse(null);
+        this.validate(word);
+        return word;
     }
 
     @Transactional(readOnly = true)
     public Boolean existsByLanguageAndTermId(final Language language, final Long termId) {
-        return translatedTermRepository.existsByLanguageAndTermId(language, termId);
+        Boolean isExist = translatedTermRepository.existsByLanguageAndTermId(language, termId);
+        this.validate(isExist);
+        return isExist;
     }
 
     @Transactional(readOnly = true)
     public List<TranslatedWordAndTermIdDto> findTranslatedWordsByLanguageAndTermIds(final Language language,
                                                                                     final List<Long> termIds) {
-        return translatedTermRepository.findTranslatedTermsByLanguageAndTermIds(language, termIds);
+        List<TranslatedWordAndTermIdDto> dtos = translatedTermRepository.findTranslatedTermsByLanguageAndTermIds(language, termIds);
+        this.validate(dtos);
+        return dtos;
     }
 
     @Transactional(readOnly = true)
     public List<TranslatedWordAndLanguageDto> findTranslatedWordsByLanguagesAndTermId(final List<Language> languages,
                                                                                       final Long termId) {
-        return translatedTermRepository.findTranslatedTermsByLanguagesAndTermId(languages, termId);
+        List<TranslatedWordAndLanguageDto> dtos = translatedTermRepository.findTranslatedTermsByLanguagesAndTermId(languages, termId);
+        this.validate(dtos);
+        return dtos;
+    }
+
+    public <T> void validate(final T data) {
+        if (data == null) {
+            throw new ExceptionHandler(TranslatedTermErrorCode.TRANSLATED_TERM_NOT_FOUND);
+        }
+    }
+
+    public <T> void validate(final List<T> data) {
+        if (data.isEmpty()) {
+            throw new ExceptionHandler(TranslatedTermErrorCode.TRANSLATED_TERM_NOT_FOUND);
+        }
     }
 }

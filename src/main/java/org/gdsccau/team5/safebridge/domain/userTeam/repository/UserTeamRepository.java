@@ -18,9 +18,6 @@ public interface UserTeamRepository extends JpaRepository<UserTeam, Long> {
     @Query("SELECT ut.user.id FROM UserTeam ut WHERE ut.team.id = :teamId")
     List<Long> findAllUserIdByTeamId(@Param("teamId") final Long teamId);
 
-    @Query("SELECT DISTINCT (ut.user.id) FROM UserTeam ut")
-    List<Long> findAllUserIdWithTeam();
-
     @Query("SELECT new org.gdsccau.team5.safebridge.domain.user.dto.UserDto$UserIdAndLanguageDto(ut.user.id, ut.user.language) "
             + "FROM UserTeam ut "
             + "WHERE ut.team.id = :teamId")
