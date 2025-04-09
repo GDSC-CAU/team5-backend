@@ -13,8 +13,18 @@ public class TeamDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class TeamOrderDto{
-        Long userId;
         Long teamId;
+        LocalDateTime lastChatTime;
+    }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TeamListDto{
+        Long teamId;
+        String teamName;
+        String lastChat;
         LocalDateTime lastChatTime;
     }
 }

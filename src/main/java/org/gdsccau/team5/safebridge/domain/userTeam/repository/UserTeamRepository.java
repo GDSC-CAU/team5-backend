@@ -3,8 +3,11 @@ package org.gdsccau.team5.safebridge.domain.userTeam.repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+
+import org.gdsccau.team5.safebridge.domain.team.dto.TeamDto;
 import org.gdsccau.team5.safebridge.domain.team.dto.TeamDto.TeamOrderDto;
 import org.gdsccau.team5.safebridge.domain.user.dto.UserDto.UserIdAndLanguageDto;
+import org.gdsccau.team5.safebridge.domain.user.entity.User;
 import org.gdsccau.team5.safebridge.domain.userTeam.entity.UserTeam;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -45,13 +48,14 @@ public interface UserTeamRepository extends JpaRepository<UserTeam, Long> {
     Optional<Integer> findUnReadMessageByUserIdAndTeamId(@Param("userId") final Long userId,
                                                          @Param("teamId") final Long teamId);
 
-    @Query("SELECT new org.gdsccau.team5.safebridge.domain.team.dto.TeamDto$TeamOrderDto(ut.user.id, ut.team.id, coalesce(h.lastChatTime, ut.createdAt)) "
+    @Query("SELECT new org.gdsccau.team5.safebridge.domain.team.dto.TeamDto$TeamOrderDto(ut.team.id, coalesce(h.lastChatTime, ut.createdAt)) "
             + "FROM UserTeam ut "
             + "LEFT JOIN ( "
             + "     SELECT c.team.id AS teamId, MAX(c.createdAt) AS lastChatTime "
             + "     FROM Chat c "
-            + "     GROUP BY c.team.id"
-            + ") h ON ut.team.id = h.teamId"
+            + "     GROUP BY c.team.id "
+            + ") h ON ut.team.id = h.teamId "
+            + "WHERE ut.user.id = :userId "
     )
-    List<TeamOrderDto> findAllTeamOrderByLastChatTime();
+    List<TeamOrderDto> findAllTeamOrderByLastChatTime(@Param("userId") final Long userId);
 }

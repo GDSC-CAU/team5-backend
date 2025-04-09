@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.redis.inroom.RedisInRoomManager;
@@ -56,6 +57,10 @@ public class RedisManager {
 
     public Set<String> getUnReadMessageDirtySet() {
         return redisUrmManager.getUnReadMessageDirtySet();
+    }
+
+    public Boolean hasTeamList(final String teamListKey) {
+        return redisTeamListManager.hasTeamList(teamListKey);
     }
 
     public Set<String> getTeamList(final String teamListKey) {

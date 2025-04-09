@@ -84,8 +84,8 @@ public class UserTeamQueryService {
     }
 
     @Transactional(readOnly = true)
-    public List<TeamOrderDto> findAllTeamOrderByLastChatTime() {
-        List<TeamOrderDto> dtos = userTeamRepository.findAllTeamOrderByLastChatTime();
+    public List<TeamOrderDto> findAllTeamOrderByLastChatTime(final Long userId) {
+        List<TeamOrderDto> dtos = userTeamRepository.findAllTeamOrderByLastChatTime(userId);
         this.validateUserTeamData(dtos);
         return dtos;
     }

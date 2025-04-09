@@ -3,6 +3,7 @@ package org.gdsccau.team5.safebridge.common.redis.teamlist;
 import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.redis.util.RedisUtil;
@@ -25,6 +26,10 @@ public class RedisTeamListManager {
 
     public String getTeamListKey(final Long userId) {
         return "userId:" + userId + ":team";
+    }
+
+    public Boolean hasTeamList(final String teamListKey) {
+        return redisTemplate.hasKey(teamListKey);
     }
 
     public Set<String> getTeamList(final String teamListKey) {
