@@ -20,40 +20,40 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ReportService {
 
-  private final SttWebClient sttWebClient;
-  private final ReportRepository reportRepository;
-  private final UserQueryService userQueryService;
-  private final UserAdminService userAdminService;
+    private final SttWebClient sttWebClient;
+    private final ReportRepository reportRepository;
+    private final UserQueryService userQueryService;
+    private final UserAdminService userAdminService;
 
-  public ReportService(final SttWebClient sttWebClient,
-      final ReportRepository reportRepository,
-      UserQueryService userQueryService,
-      UserAdminService userAdminService
-  ) {
-    this.sttWebClient = sttWebClient;
-    this.reportRepository = reportRepository;
-    this.userQueryService = userQueryService;
-    this.userAdminService = userAdminService;
-  }
-
-  public Report store(final ReportRequestDto requestDto) {
-
-    try {
-      String text = sttWebClient.requestStt(requestDto.file());
-      User user = userQueryService.findByUserId(requestDto.userId());
-      User admin = userAdminService.findAdminByEmployee(user);
-
-      Report report = ReportConverter.toReport(text, user, admin);
-      reportRepository.save(report);
-      return report;
-
-    } catch (IOException ioException) {
-      throw new ExceptionHandler(ReportErrorCode.REPORT_FILE_NOT_CORRECT);
+    public ReportService(final SttWebClient sttWebClient,
+                         final ReportRepository reportRepository,
+                         UserQueryService userQueryService,
+                         UserAdminService userAdminService
+    ) {
+        this.sttWebClient = sttWebClient;
+        this.reportRepository = reportRepository;
+        this.userQueryService = userQueryService;
+        this.userAdminService = userAdminService;
     }
 
-  }
+    public Report store(final ReportRequestDto requestDto) {
 
-  public List<Report> list(Long leaderId) {
-    return reportRepository.findAllByLeaderId(leaderId);
-  }
+        try {
+            String text = sttWebClient.requestStt(requestDto.file());
+            User user = userQueryService.findByUserId(requestDto.userId());
+            User admin = userAdminService.findAdminByEmployee(user);
+
+            Report report = ReportConverter.toReport(text, user, admin);
+            reportRepository.save(report);
+            return report;
+
+        } catch (IOException ioException) {
+            throw new ExceptionHandler(ReportErrorCode.REPORT_FILE_NOT_CORRECT);
+        }
+
+    }
+
+    public List<Report> list(Long leaderId) {
+        return reportRepository.findAllByLeaderId(leaderId);
+    }
 }

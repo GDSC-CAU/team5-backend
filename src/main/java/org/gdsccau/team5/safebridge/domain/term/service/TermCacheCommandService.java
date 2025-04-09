@@ -3,7 +3,9 @@ package org.gdsccau.team5.safebridge.domain.term.service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
+
 import lombok.RequiredArgsConstructor;
+import org.gdsccau.team5.safebridge.common.cache.CacheType;
 import org.gdsccau.team5.safebridge.common.term.Language;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
@@ -25,7 +27,7 @@ public class TermCacheCommandService {
     public String updateFindCount(final String word, final Language language) {
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMddHH");
         String currentTime = LocalDateTime.now().format(dateTimeFormatter);
-        String currentValue = Objects.requireNonNull(cacheManager.getCache("findCount"))
+        String currentValue = Objects.requireNonNull(cacheManager.getCache(CacheType.TERM_FIND_COUNT.getCacheName()))
                 .get(word + ":" + language.toString(), String.class);
         int newFindCount = 1;
         if (currentValue != null) {

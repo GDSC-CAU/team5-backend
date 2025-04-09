@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.code.success.ChatSuccessCode;
 import org.gdsccau.team5.safebridge.common.response.ApiResponse;
+import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.request.ChatRequestDto.ChatMessageRequestDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.response.ChatResponseDto.WorkResponseDto;
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
@@ -25,8 +26,8 @@ public class ChatController {
 
     @MessageMapping("/chats/teams/{teamId}")
     public void chat(final ChatMessageRequestDto chatRequestDto, @DestinationVariable final Long teamId) {
-        Chat chat = chatFacade.createChat(chatRequestDto, teamId);
-        chatFacade.chat(chatRequestDto, teamId, chat);
+        ChatDto.ChatDetailDto chatDetailDto = chatFacade.createChat(chatRequestDto, teamId);
+        chatFacade.chat(chatRequestDto, teamId, chatDetailDto);
     }
 
     @GetMapping("/chats/teams/{teamId}")

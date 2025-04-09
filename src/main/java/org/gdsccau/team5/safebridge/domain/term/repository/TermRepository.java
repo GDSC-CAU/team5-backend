@@ -20,12 +20,6 @@ public interface TermRepository extends JpaRepository<Term, Long> {
     @Query("SELECT t FROM Term t WHERE t.word = :word")
     Optional<Term> findTermByWord(@Param("word") final String word);
 
-    @Query("SELECT t.id FROM Term t WHERE t.word = :word")
-    Optional<Long> findTermIdByWord(@Param("word") final String word);
-
-    @Query("SELECT count(t) > 0 FROM Term t WHERE t.word = :word")
-    boolean existsByWord(@Param("word") final String word);
-
     @Query("SELECT new org.gdsccau.team5.safebridge.domain.term.dto.TermDto$TermIdAndWordDto(t.id, t.word) "
             + "FROM Term t "
             + "WHERE t.word IN :words")

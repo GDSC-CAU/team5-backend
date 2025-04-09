@@ -7,7 +7,7 @@ spring:
     username: ${MYSQL_DB_USER}
     password: ${MYSQL_DB_PASS}
   jpa:
-    open-in-view: true
+    open-in-view: false
     hibernate:
       ddl-auto: update
     show-sql: true

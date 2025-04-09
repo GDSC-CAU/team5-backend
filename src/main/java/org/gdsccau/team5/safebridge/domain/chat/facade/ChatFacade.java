@@ -6,10 +6,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.term.Language;
 import org.gdsccau.team5.safebridge.common.term.TermManager;
+import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataWithNewChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.request.ChatRequestDto.ChatMessageRequestDto;
@@ -38,13 +40,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@Transactional
 public class ChatFacade {
 
     private final ChatCommandService chatCommandService;
     private final ChatSendService chatSendService;
     private final ChatQueryService chatQueryService;
-    private final TeamQueryService teamQueryService;
     private final UserQueryService userQueryService;
     private final UserTeamQueryService userTeamQueryService;
     private final TermQueryService termQueryService;
@@ -53,9 +53,14 @@ public class ChatFacade {
     private final TranslatedTermQueryService translatedTermQueryService;
     private final TermManager termManager;
 
-    public void chat(final ChatMessageRequestDto chatRequestDto, final Long teamId, final Chat chat) {
+    public ChatDto.ChatDetailDto createChat(final ChatMessageRequestDto chatRequestDto, final Long teamId) {
+        return chatCommandService.createChat(chatRequestDto, teamId);
+    }
+
+    // 여기서 파라미터로 넘겨준 chat은 준영속 상태 엔티티다.
+    public void chat(final ChatMessageRequestDto chatRequestDto, final Long teamId, final ChatDto.ChatDetailDto chatDetailDto) {
         TermDataWithNewChatDto result = termManager.query(chatRequestDto.getMessage()); // 현장용어 추출
-        chatSendService.sendChatMessage(result, chatRequestDto.getName(), chat, teamId); // 채팅은 즉시 전송
+        chatSendService.sendChatMessage(result, chatRequestDto.getName(), chatDetailDto, teamId); // 채팅은 즉시 전송
 
         // 현장용어 추출 후 Term 엔티티 저장하기
         createTerms(result);
@@ -66,23 +71,16 @@ public class ChatFacade {
         // 채팅방에 속한 모든 사용자에 대해 번역 데이터를 전송하고 채팅방 순서를 갱신한다.
         dtos.forEach(dto -> {
             Language language = dto.getLanguage();
-            chatSendService.sendTranslatedMessage(result, language, chat.getId(), teamId, dto.getUserId());
-            chatSendService.sendTeamData(chat, teamId, dto.getUserId());
+            chatSendService.sendTranslatedMessage(result, language, chatDetailDto.getChatId(), teamId, dto.getUserId());
+            chatSendService.sendTeamData(chatDetailDto, teamId, dto.getUserId());
         });
 
         // 현장용어를 위한 Local Cache 업데이트
         termMetaDataCommandService.updateTermMetaDataInLocalCache(result.getTerms(), getLanguageSet(dtos));
     }
 
-    @Transactional
-    public Chat createChat(final ChatMessageRequestDto chatRequestDto, final Long teamId) {
-        User user = userQueryService.findByUserId(chatRequestDto.getUserId());
-        Team team = teamQueryService.findByTeamId(teamId);
-        return chatCommandService.createChat(chatRequestDto, user, team);
-    }
-
-    public Map<String, Object> findAllChats(final String role, final Long cursorId, final Long userId,
-                                            final Long teamId) {
+    public Map<String, Object> findAllChats(final String role, final Long cursorId,
+                                            final Long userId, final Long teamId) {
         Language language = userQueryService.findLanguageByUserId(userId);
         Slice<ChatMessageWithIsReadResponseDto> chatSlice = chatQueryService.findAllChatsByTeamId(Role.valueOf(role),
                 cursorId, teamId, language);

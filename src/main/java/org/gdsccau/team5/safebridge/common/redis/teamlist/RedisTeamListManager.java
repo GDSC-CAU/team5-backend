@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.redis.util.RedisUtil;
+import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
@@ -36,20 +37,10 @@ public class RedisTeamListManager {
         return redisTemplate.opsForZSet().reverseRange(teamListKey, 0, -1);
     }
 
-    public void updateTeamList(final String teamListKey, final Long teamId, final Chat chat) {
-        Double score = RedisUtil.convertToDateFormat(RedisUtil.FULL_DATE_FORMAT, chat.getCreatedAt());
-        redisTemplate.opsForZSet().add(teamListKey, String.valueOf(teamId), score);
-        redisTemplate.expire(teamListKey, RedisUtil.TTL, TimeUnit.HOURS);
-    }
-
-    // TODO Warming 할 때 TTL 갱신을 해야할까? + TTL과 Warming 주기의 관계에 대해서 고민!
     public void updateTeamList(final String teamListKey, final Long teamId, final LocalDateTime lastChatTime) {
         Double score = RedisUtil.convertToDateFormat(RedisUtil.FULL_DATE_FORMAT, lastChatTime);
         redisTemplate.opsForZSet().add(teamListKey, String.valueOf(teamId), score);
-    }
-
-    public void clearTeamList(final String teamListKey) {
-        redisTemplate.opsForZSet().removeRange(teamListKey, 0, -1);
+        redisTemplate.expire(teamListKey, RedisUtil.TTL, TimeUnit.HOURS);
     }
 
     public void deleteTeamList(final String teamListKey, final Long teamId) {

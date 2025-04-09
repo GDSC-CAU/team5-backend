@@ -11,6 +11,7 @@ import org.gdsccau.team5.safebridge.common.redis.inroom.RedisInRoomManager;
 import org.gdsccau.team5.safebridge.common.redis.teamlist.RedisTeamListManager;
 import org.gdsccau.team5.safebridge.common.redis.term.RedisTermManager;
 import org.gdsccau.team5.safebridge.common.redis.unreadmessage.RedisUrmManager;
+import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Component;
@@ -79,11 +80,6 @@ public class RedisManager {
         redisUrmManager.updateUnReadMessageDirtySet(userId, teamId);
     }
 
-    public void updateTeamList(final String teamListKey, final Long teamId, final Chat chat) {
-        redisTeamListManager.updateTeamList(teamListKey, teamId, chat);
-    }
-
-    // TODO Warming 할 때 TTL 갱신을 해야할까? + TTL과 Warming 주기의 관계에 대해서 고민!
     public void updateTeamList(final String teamListKey, final Long teamId, final LocalDateTime lastChatTime) {
         redisTeamListManager.updateTeamList(teamListKey, teamId, lastChatTime);
     }
@@ -117,9 +113,5 @@ public class RedisManager {
 
     public void clearUnReadMessageDirtySet(final Set<String> beforeUpdatedSet) {
         redisUrmManager.clearUnReadMessageDirtySet(beforeUpdatedSet);
-    }
-
-    public void clearTeamList(final String teamListKey) {
-        redisTeamListManager.clearTeamList(teamListKey);
     }
 }

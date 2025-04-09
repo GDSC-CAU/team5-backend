@@ -11,6 +11,7 @@ import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.gdsccau.team5.safebridge.common.term.Language;
 import org.gdsccau.team5.safebridge.common.term.TermManager;
 import org.gdsccau.team5.safebridge.domain.chat.converter.ChatConverter;
+import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataWithNewChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TranslatedDataDto;
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
@@ -52,10 +53,10 @@ public class ChatSendService {
             .expireAfterWrite(10, TimeUnit.SECONDS)
             .build();
 
-    public void sendChatMessage(final TermDataWithNewChatDto result, final String name, final Chat chat,
-                                final Long teamId) {
+    public void sendChatMessage(final TermDataWithNewChatDto result, final String name,
+                                final ChatDto.ChatDetailDto chatDetailDto, final Long teamId) {
         messagingTemplate.convertAndSend(CHAT_SUB_URL + teamId,
-                ChatConverter.toChatResponseDto(name, chat, result.getTerms()));
+                ChatConverter.toChatResponseDto(name, chatDetailDto, result.getTerms()));
     }
 
     public void sendTranslatedMessage(final TermDataWithNewChatDto result, final Language language,
@@ -67,18 +68,17 @@ public class ChatSendService {
             dto.getTtSet().forEach(data -> createTranslatedTerm(language, data));
             createTranslation(language, dto, chatId);
             messagingTemplate.convertAndSend(TRANSLATE_SUB_URL + teamId + "/" + userId,
-                    ChatConverter.toTranslatedTextResponseDto(dto.getTranslatedText(), dto.getTranslatedTerms(),
-                            chatId));
+                    ChatConverter.toTranslatedTextResponseDto(dto.getTranslatedText(), dto.getTranslatedTerms(), chatId));
         });
         // TODO 비동기 처리에 대한 예외처리
     }
 
-    public void sendTeamData(final Chat chat, final Long teamId, final Long userId) {
-        TeamListDto teamListDto = this.refreshRedisValue(chat, teamId, userId);
+    public void sendTeamData(final ChatDto.ChatDetailDto chatDetailDto, final Long teamId, final Long userId) {
+        TeamListDto teamListDto = this.refreshRedisValue(chatDetailDto, teamId, userId);
         messagingTemplate.convertAndSend(TEAMS_SUB_URL + userId, teamListDto);
     }
 
-    private TeamListDto refreshRedisValue(final Chat chat, final Long teamId, final Long userId) {
+    private TeamListDto refreshRedisValue(final ChatDto.ChatDetailDto chatDetailDto, final Long teamId, final Long userId) {
         String inRoomKey = redisManager.getInRoomKey(userId, teamId);
         String unReadMessageKey = redisManager.getUnReadMessageKey(userId, teamId);
         String teamListKey = redisManager.getTeamListKey(userId);
@@ -89,9 +89,9 @@ public class ChatSendService {
             redisManager.updateUnReadMessage(unReadMessageKey);
             redisManager.updateUnReadMessageDirtySet(userId, teamId);
         }
-        redisManager.updateTeamList(teamListKey, teamId, chat);
+        redisManager.updateTeamList(teamListKey, teamId, chatDetailDto.getCreatedAt());
 
-        return createTeamListDto(teamId, chat.getText(), chat.getCreatedAt(),
+        return createTeamListDto(teamId, chatDetailDto.getText(), chatDetailDto.getCreatedAt(),
                 redisManager.getUnReadMessageOrDefault(unReadMessageKey,
                         () -> userTeamQueryService.findUnReadMessageByUserIdAndTeamId(userId, teamId))
         );

@@ -16,12 +16,12 @@ public class TeamCommandService {
     private final TeamRepository teamRepository;
 
     @Transactional
-    public Team createTeam(final String teamName) {
+    public Long createTeam(final String teamName) {
         Team team = Team.builder()
                 .name(teamName)
                 .build();
         log.info("채팅방 {} 생성하기", teamName);
-        return teamRepository.save(team);
+        return teamRepository.save(team).getId();
     }
 
     @Transactional

@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,6 +20,17 @@ public class ChatDto {
     public static class ChatMetaDataDto {
         String lastChat;
         LocalDateTime lastChatTime;
+    }
+
+    @Builder
+    @Getter
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ChatDetailDto {
+        Long chatId;
+        Long userId;
+        String text;
+        LocalDateTime createdAt;
     }
 
     @Builder
