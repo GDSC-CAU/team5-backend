@@ -6,7 +6,6 @@ import org.gdsccau.team5.safebridge.common.response.ApiResponse;
 import org.gdsccau.team5.safebridge.domain.team.dto.request.TeamRequestDto.TeamCreateRequestDto;
 import org.gdsccau.team5.safebridge.domain.team.dto.response.TeamResponseDto.TeamDataDto;
 import org.gdsccau.team5.safebridge.domain.team.facade.TeamFacade;
-import org.gdsccau.team5.safebridge.domain.team.service.TeamService;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,14 +35,14 @@ public class TeamController {
     @PostMapping("/{teamId}/users/{userId}/join")
     public ApiResponse<TeamDataDto> joinTeam(@PathVariable(name = "teamId") final Long teamId,
                                              @PathVariable(name = "userId") final Long userId) {
-        TeamDataDto teamDataDto = teamFacade.joinTeam(teamId, userId);
+        TeamDataDto teamDataDto = teamFacade.joinTeam(userId, teamId);
         return ApiResponse.onSuccess(TeamSuccessCode.JOIN_TEAM, teamDataDto);
     }
 
     @PostMapping("/{teamId}/users/{userId}/leave")
     public ApiResponse<Void> leaveTeam(@PathVariable(name = "teamId") final Long teamId,
                                        @PathVariable(name = "userId") final Long userId) {
-        teamFacade.leaveTeam(teamId, userId);
+        teamFacade.leaveTeam(userId, teamId);
         return ApiResponse.onSuccess(TeamSuccessCode.LEAVE_TEAM);
     }
 }
