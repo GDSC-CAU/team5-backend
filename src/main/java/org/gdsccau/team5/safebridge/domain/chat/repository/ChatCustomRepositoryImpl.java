@@ -8,9 +8,11 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
-import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.term.Language;
 import org.gdsccau.team5.safebridge.domain.chat.dto.response.ChatResponseDto.ChatMessageWithIsReadResponseDto;
 import org.gdsccau.team5.safebridge.domain.chat.entity.QChat;
@@ -22,6 +24,7 @@ import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.SliceImpl;
 import org.springframework.stereotype.Repository;
 
+@Slf4j
 @Repository
 public class ChatCustomRepositoryImpl implements ChatCustomRepository {
 
@@ -51,6 +54,9 @@ public class ChatCustomRepositoryImpl implements ChatCustomRepository {
             results.remove(pageable.getPageSize());
             hasNext = true;
         }
+
+        results.sort(Comparator.comparing(ChatMessageWithIsReadResponseDto::getChatId).reversed());
+
         return new SliceImpl<>(results, pageable, hasNext);
     }
 
@@ -93,8 +99,19 @@ public class ChatCustomRepositoryImpl implements ChatCustomRepository {
         QChat chat = QChat.chat;
         QUser user = QUser.user;
         QTranslation translation = QTranslation.translation;
+
+        List<Long> chatIds = queryFactory
+                .select(chat.id)
+                .from(chat)
+                .where(
+                        chat.team.id.eq(teamId)
+                                .and(eqCursorId(cursorId))
+                )
+                .limit(pageable.getPageSize() + 1)
+                .fetch();
+
         return queryFactory
-                .selectDistinct(Projections.constructor(
+                .select(Projections.constructor(
                         ChatMessageWithIsReadResponseDto.class,
                         chat.id,
                         user.id,
@@ -107,14 +124,8 @@ public class ChatCustomRepositoryImpl implements ChatCustomRepository {
                 ))
                 .from(chat)
                 .join(user).on(user.id.eq(chat.user.id))
-                .join(translation).on(translation.chat.id.eq(chat.id))
-                .where(
-                        chat.team.id.eq(teamId)
-                                .and(eqCursorId(cursorId))
-                                .and(translation.language.eq(language))
-                )
-                .orderBy(chat.id.desc())
-                .limit(pageable.getPageSize() + 1)
+                .join(translation).on(translation.chat.id.eq(chat.id)).on(translation.language.eq(language))
+                .where(chat.id.in(chatIds))
                 .fetch();
     }
 

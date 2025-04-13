@@ -12,7 +12,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface ChatRepository extends JpaRepository<Chat, Long> {
 
-    @Query("SELECT new org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto$ChatMetaDataDto(coalesce(c.text, null), coalesce(c.createdAt, c.team.createdAt)) "
+    @Query("SELECT new org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto$ChatMetaDataDto(c.text, c.createdAt) "
             + "FROM Chat c "
             + "WHERE c.team.id = :teamId "
             + "ORDER BY c.createdAt DESC")

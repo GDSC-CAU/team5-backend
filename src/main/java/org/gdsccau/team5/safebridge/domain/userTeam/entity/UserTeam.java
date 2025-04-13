@@ -6,8 +6,10 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -25,6 +27,9 @@ import org.hibernate.annotations.OnDeleteAction;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @SuperBuilder
+@Table(name = "user_team", indexes = {
+        @Index(name = "idx_user_team", columnList = "user_id, team_id")
+})
 public class UserTeam extends BaseEntity {
 
     @Id
@@ -56,5 +61,9 @@ public class UserTeam extends BaseEntity {
 
     public void updateInRoomWhenLeave() {
         this.inRoom = 0;
+    }
+
+    public void updateUnReadMessageWhenJoin() {
+        this.unReadMessage = 0;
     }
 }

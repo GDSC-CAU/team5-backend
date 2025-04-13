@@ -26,6 +26,7 @@ public class UserTeamCommandService {
     public void updateInRoomWhenJoin(final Long userId, final Long teamId) {
         UserTeam userTeam = userTeamQueryService.findUserTeamByUserIdAndTeamId(userId, teamId);
         userTeam.updateInRoomWhenJoin();
+        userTeam.updateUnReadMessageWhenJoin();
     }
 
     @Transactional

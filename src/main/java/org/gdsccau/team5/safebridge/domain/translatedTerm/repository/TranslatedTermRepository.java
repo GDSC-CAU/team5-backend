@@ -30,15 +30,15 @@ public interface TranslatedTermRepository extends JpaRepository<TranslatedTerm, 
 
     @Query("SELECT new org.gdsccau.team5.safebridge.domain.translatedTerm.dto.TranslatedTermDto$TranslatedWordAndTermIdDto (tt.word, tt.term.id) "
             + "FROM TranslatedTerm tt "
-            + "WHERE tt.language = :language AND tt.term.id IN :termIds")
-    List<TranslatedWordAndTermIdDto> findTranslatedTermsByLanguageAndTermIds(@Param("language") final Language language,
-                                                                             @Param("termIds") final List<Long> termIds);
+            + "WHERE tt.term.id IN :termIds AND tt.language = :language ")
+    List<TranslatedWordAndTermIdDto> findTranslatedTermsByLanguageAndTermIds(@Param("termIds") final List<Long> termIds,
+                                                                             @Param("language") final Language language);
 
     @Query("SELECT new org.gdsccau.team5.safebridge.domain.translatedTerm.dto.TranslatedTermDto$TranslatedWordAndLanguageDto (tt.word, tt.language) "
             + "FROM TranslatedTerm tt "
-            + "WHERE tt.language IN :languages AND tt.term.id = :termId")
+            + "WHERE tt.term.id = :termId AND tt.language IN :languages ")
     List<TranslatedWordAndLanguageDto> findTranslatedTermsByLanguagesAndTermId(
-            @Param("languages") final List<Language> languages,
-            @Param("termId") final Long termId);
+            @Param("termId") final Long termId,
+            @Param("languages") final List<Language> languages);
 
 }

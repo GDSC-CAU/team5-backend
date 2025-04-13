@@ -46,6 +46,7 @@ logging:
     file: "[%d{yyyy-MM-dd HH:mm:ss.SSS}][%-5level][%logger.%method:line%line] - %msg%n"
   level:
     com.example.log: debug
+    org.springframework.jdbc: debug
   logback:
     rollingpolicy:
       max-file-size: 10MB

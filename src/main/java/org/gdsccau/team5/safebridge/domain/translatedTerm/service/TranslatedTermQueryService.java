@@ -37,7 +37,7 @@ public class TranslatedTermQueryService {
     @Transactional(readOnly = true)
     public List<TranslatedWordAndTermIdDto> findTranslatedWordsByLanguageAndTermIds(final Language language,
                                                                                     final List<Long> termIds) {
-        List<TranslatedWordAndTermIdDto> dtos = translatedTermRepository.findTranslatedTermsByLanguageAndTermIds(language, termIds);
+        List<TranslatedWordAndTermIdDto> dtos = translatedTermRepository.findTranslatedTermsByLanguageAndTermIds(termIds, language);
         this.validate(dtos);
         return dtos;
     }
@@ -45,7 +45,7 @@ public class TranslatedTermQueryService {
     @Transactional(readOnly = true)
     public List<TranslatedWordAndLanguageDto> findTranslatedWordsByLanguagesAndTermId(final List<Language> languages,
                                                                                       final Long termId) {
-        List<TranslatedWordAndLanguageDto> dtos = translatedTermRepository.findTranslatedTermsByLanguagesAndTermId(languages, termId);
+        List<TranslatedWordAndLanguageDto> dtos = translatedTermRepository.findTranslatedTermsByLanguagesAndTermId(termId, languages);
         this.validate(dtos);
         return dtos;
     }
