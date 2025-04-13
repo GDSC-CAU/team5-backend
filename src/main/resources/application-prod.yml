@@ -22,6 +22,10 @@ spring:
       port: ${REDIS_PORT}
       timeout: 6
 
+  threads:
+    virtual:
+      enabled: true
+
 google:
   service-account:
     type: ${GOOGLE_TYPE}

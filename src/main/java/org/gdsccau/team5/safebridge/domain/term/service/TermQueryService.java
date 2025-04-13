@@ -28,9 +28,7 @@ public class TermQueryService {
 
     @Transactional(readOnly = true)
     public List<TermIdAndWordDto> findTermIdAndWord(final List<String> words) {
-        List<TermIdAndWordDto> dtos = termRepository.findTermIdAndWordByWords(words);
-        this.validate(dtos);
-        return dtos;
+        return termRepository.findTermIdAndWordByWords(words);
     }
 
     public <T> void validate(final T data) {

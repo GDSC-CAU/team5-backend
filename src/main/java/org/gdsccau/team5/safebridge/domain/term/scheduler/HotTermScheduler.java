@@ -2,16 +2,19 @@ package org.gdsccau.team5.safebridge.domain.term.scheduler;
 
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.cache.CacheType;
 import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.gdsccau.team5.safebridge.common.redis.publisher.RedisMessagePublisher;
 import org.gdsccau.team5.safebridge.domain.term.service.TermCacheCommandService;
 import org.gdsccau.team5.safebridge.domain.term.service.TermCacheQueryService;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class HotTermScheduler {
 
     private final RedisManager redisManager;

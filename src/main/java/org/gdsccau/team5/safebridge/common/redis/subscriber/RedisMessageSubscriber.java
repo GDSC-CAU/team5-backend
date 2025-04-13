@@ -33,7 +33,6 @@ public class RedisMessageSubscriber implements MessageListener {
     private final TermCacheCommandService termCacheCommandService;
     private final RedisManager redisManager;
 
-    @Async("threadPoolTaskExecutor")
     @Override
     public void onMessage(Message message, byte[] pattern) {
         log.info("Redis Subscribe !!");

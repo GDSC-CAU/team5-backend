@@ -112,9 +112,10 @@ public class TermManager {
                 .build();
     }
 
-    @Async("threadPoolTaskExecutor")
+    @Async
     public CompletableFuture<TranslatedDataDto> translate(final String text, final List<TermDataDto> termDataDtos,
                                                           final Language language) {
+        log.info("채팅 번역");
         return CompletableFuture.supplyAsync(() -> {
             try (InputStream inputStream = getCredentialsStream()) {
                 GoogleCredentials credentials = ServiceAccountCredentials.fromStream(inputStream);
@@ -139,7 +140,6 @@ public class TermManager {
                                        final Language language) {
         Map<String, String> result = new HashMap<>();
         Set<TermDto.CreateTranslatedTermEntityDto> ttSet = new HashSet<>();
-
         termDataDtos.forEach(termDataDto -> {
             String translatedWord = termCacheQueryService.findTerm(termDataDto.getTerm(), language);
             if (translatedWord == null) {

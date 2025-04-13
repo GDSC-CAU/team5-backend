@@ -3,8 +3,6 @@ package org.gdsccau.team5.safebridge.domain.userTeam.facade;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.redis.RedisManager;

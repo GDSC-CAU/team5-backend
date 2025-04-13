@@ -1,8 +1,6 @@
 package org.gdsccau.team5.safebridge.domain.chat.service;
 
 import java.util.List;
-import java.util.Optional;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.code.error.ChatErrorCode;
@@ -39,10 +37,14 @@ public class ChatQueryService {
     @Transactional(readOnly = true)
     public ChatMetaDataDto findChatMetaDataByTeamId(final Long teamId) {
         Pageable pageable = PageRequest.of(0, 1);
-        Optional<ChatMetaDataDto> chatMetaDataDto = chatRepository.findChatMetaDataDtoByTeamId(teamId, pageable)
-                .getContent().stream().findFirst();
-        this.validateChatData(chatMetaDataDto.get());
-        return chatMetaDataDto.get();
+        return chatRepository.findChatMetaDataDtoByTeamId(teamId, pageable)
+                .getContent()
+                .stream()
+                .findFirst()
+                .orElse(ChatMetaDataDto.builder()
+                        .lastChat("")
+                        .lastChatTime(null)
+                        .build());
     }
 
     @Transactional(readOnly = true)
