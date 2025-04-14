@@ -19,14 +19,12 @@ public class TermQueryService {
 
     private final TermRepository termRepository;
 
-    @Transactional(readOnly = true)
-    public Term findTermByWord(final String word) {
-        Term term = termRepository.findTermByWord(word).orElse(null);
-        this.validate(term);
-        return term;
+    public Long findTermIdByWord(final String word){
+        Long termId = termRepository.findTermIdByWord(word).orElse(null);
+        this.validate(termId);
+        return termId;
     }
 
-    @Transactional(readOnly = true)
     public List<TermIdAndWordDto> findTermIdAndWord(final List<String> words) {
         return termRepository.findTermIdAndWordByWords(words);
     }

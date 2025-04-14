@@ -20,21 +20,18 @@ public class TranslatedTermQueryService {
 
     private final TranslatedTermRepository translatedTermRepository;
 
-    @Transactional(readOnly = true)
     public String findTranslatedWordByLanguageAndTermId(final Language language, final Long termId) {
         String word = translatedTermRepository.findTranslatedWordByLanguageAndTermId(language, termId).orElse(null);
         this.validate(word);
         return word;
     }
 
-    @Transactional(readOnly = true)
     public Boolean existsByLanguageAndTermId(final Language language, final Long termId) {
         Boolean isExist = translatedTermRepository.existsByLanguageAndTermId(language, termId);
         this.validate(isExist);
         return isExist;
     }
 
-    @Transactional(readOnly = true)
     public List<TranslatedWordAndTermIdDto> findTranslatedWordsByLanguageAndTermIds(final Language language,
                                                                                     final List<Long> termIds) {
         List<TranslatedWordAndTermIdDto> dtos = translatedTermRepository.findTranslatedTermsByLanguageAndTermIds(termIds, language);
@@ -42,7 +39,6 @@ public class TranslatedTermQueryService {
         return dtos;
     }
 
-    @Transactional(readOnly = true)
     public List<TranslatedWordAndLanguageDto> findTranslatedWordsByLanguagesAndTermId(final List<Language> languages,
                                                                                       final Long termId) {
         List<TranslatedWordAndLanguageDto> dtos = translatedTermRepository.findTranslatedTermsByLanguagesAndTermId(termId, languages);

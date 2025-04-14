@@ -14,7 +14,6 @@ public class TermCommandService {
 
     private final TermRepository termRepository;
 
-    @Transactional
     public void createTerm(final String word, final String meaning) {
         termRepository.upsertTerm(word, meaning);
     }

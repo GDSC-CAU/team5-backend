@@ -20,63 +20,54 @@ public class UserTeamQueryService {
 
     private final UserTeamRepository userTeamRepository;
 
-    @Transactional(readOnly = true)
     public List<Long> findAllUserIdByTeamId(final Long teamId) {
         List<Long> userIds = userTeamRepository.findAllUserIdByTeamId(teamId);
         this.validateUserTeamData(userIds);
         return userIds;
     }
 
-    @Transactional(readOnly = true)
     public List<Long> findAllTeamIdByUserId(final Long userId) {
         List<Long> teamIds = userTeamRepository.findAllTeamIdByUserId(userId);
         this.validateUserTeamData(teamIds);
         return teamIds;
     }
 
-    @Transactional(readOnly = true)
     public List<UserIdAndLanguageDto> findAllUserIdAndLanguageByTeamId(final Long teamId) {
         List<UserIdAndLanguageDto> dtos = userTeamRepository.findAllUserIdAndLanguageByTeamId(teamId);
         this.validateUserTeamData(dtos);
         return dtos;
     }
 
-    @Transactional(readOnly = true)
     public int countNumOfUsersByTeamId(final Long teamId) {
         Integer numOfUsers = userTeamRepository.countNumOfUsersByTeamId(teamId);
         this.validateUserTeamData(numOfUsers);
         return numOfUsers;
     }
 
-    @Transactional(readOnly = true)
     public UserTeam findUserTeamByUserIdAndTeamId(final Long userId, final Long teamId) {
         UserTeam userTeam = userTeamRepository.findUserTeamByUserIdAndTeamId(userId, teamId).orElse(null);
         this.validateUserTeamData(userTeam);
         return userTeam;
     }
 
-    @Transactional(readOnly = true)
     public LocalDateTime findAccessDateByUserIdAndTeamId(final Long userId, final Long teamId) {
         LocalDateTime accessDate = userTeamRepository.findAccessDateByUserIdAndTeamId(userId, teamId).orElse(null);
         this.validateUserTeamData(accessDate);
         return accessDate;
     }
 
-    @Transactional(readOnly = true)
     public Integer findInRoomByUserIdAndTeamId(final Long userId, final Long teamId) {
         Integer inRoom = userTeamRepository.findInRoomByUserIdAndTeamId(userId, teamId).orElse(null);
         this.validateUserTeamData(inRoom);
         return inRoom;
     }
 
-    @Transactional(readOnly = true)
     public Integer findUnReadMessageByUserIdAndTeamId(final Long userId, final Long teamId) {
         Integer unReadMessage = userTeamRepository.findUnReadMessageByUserIdAndTeamId(userId, teamId).orElse(null);
         this.validateUserTeamData(unReadMessage);
         return unReadMessage;
     }
 
-    @Transactional(readOnly = true)
     public List<TeamOrderDto> findAllTeamOrderByLastChatTime(final Long userId) {
         List<TeamOrderDto> dtos = userTeamRepository.findAllTeamOrderByLastChatTime(userId);
         this.validateUserTeamData(dtos);

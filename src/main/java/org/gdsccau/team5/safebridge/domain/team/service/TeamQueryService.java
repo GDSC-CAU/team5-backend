@@ -17,14 +17,12 @@ public class TeamQueryService {
 
     private final TeamRepository teamRepository;
 
-    @Transactional(readOnly = true)
     public Team findByTeamId(final Long teamId) {
         Team team = teamRepository.findById(teamId).orElse(null);
         this.validateTeamData(team);
         return team;
     }
 
-    @Transactional(readOnly = true)
     public String findNameByTeamId(final Long teamId) {
         String teamName = teamRepository.findNameByTeamId(teamId).orElse(null);
         this.validateTeamData(teamName);

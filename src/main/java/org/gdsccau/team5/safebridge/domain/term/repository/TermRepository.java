@@ -17,8 +17,8 @@ public interface TermRepository extends JpaRepository<Term, Long> {
             + "ON DUPLICATE KEY UPDATE meaning = :meaning", nativeQuery = true)
     void upsertTerm(@Param("word") String word, @Param("meaning") String meaning);
 
-    @Query("SELECT t FROM Term t WHERE t.word = :word")
-    Optional<Term> findTermByWord(@Param("word") final String word);
+    @Query("SELECT t.id FROM Term t WHERE t.word = :word")
+    Optional<Long> findTermIdByWord(@Param("word") final String word);
 
     @Query("SELECT new org.gdsccau.team5.safebridge.domain.term.dto.TermDto$TermIdAndWordDto(t.id, t.word) "
             + "FROM Term t "

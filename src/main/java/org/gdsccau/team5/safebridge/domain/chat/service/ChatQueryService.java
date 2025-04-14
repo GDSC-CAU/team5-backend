@@ -34,7 +34,6 @@ public class ChatQueryService {
         return chat;
     }
 
-    @Transactional(readOnly = true)
     public ChatMetaDataDto findChatMetaDataByTeamId(final Long teamId) {
         Pageable pageable = PageRequest.of(0, 1);
         return chatRepository.findChatMetaDataDtoByTeamId(teamId, pageable)
@@ -47,7 +46,6 @@ public class ChatQueryService {
                         .build());
     }
 
-    @Transactional(readOnly = true)
     public Slice<ChatMessageWithIsReadResponseDto> findAllChatsByTeamId(final Role role,
                                                                         final Long cursorId,
                                                                         final Long teamId,
@@ -59,7 +57,6 @@ public class ChatQueryService {
         return dtos;
     }
 
-    @Transactional(readOnly = true)
     public List<WorkResponseDto> findAllWorks(final List<Long> teamIds) {
         List<WorkResponseDto> dtos = chatRepository.findAllWorksByTeamIds(teamIds);
         this.validateChatData(dtos);

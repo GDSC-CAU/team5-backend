@@ -17,7 +17,6 @@ public class UserTeamCommandService {
     private final UserTeamQueryService userTeamQueryService;
     private final UserTeamBatchRepository userTeamBatchRepository;
 
-    @Transactional
     public void batchInsertUserTeam(final List<Long> userIds, final Long teamId) {
         userTeamBatchRepository.userTeamBatchInsert(userIds, teamId);
     }
@@ -36,7 +35,6 @@ public class UserTeamCommandService {
         userTeam.updateInRoomWhenLeave();
     }
 
-    @Transactional
     public void syncUnReadMessageToDB(final List<UserTeamUnReadMessageDto> dtos) {
         userTeamBatchRepository.unReadMessageBatchUpdate(dtos);
     }

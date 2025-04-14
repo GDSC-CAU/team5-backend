@@ -143,9 +143,9 @@ public class TermManager {
         termDataDtos.forEach(termDataDto -> {
             String translatedWord = termCacheQueryService.findTerm(termDataDto.getTerm(), language);
             if (translatedWord == null) {
-                Term term = termQueryService.findTermByWord(termDataDto.getTerm());
-                if (translatedTermQueryService.existsByLanguageAndTermId(language, term.getId())) {
-                    translatedWord = translatedTermQueryService.findTranslatedWordByLanguageAndTermId(language, term.getId());
+                Long termId = termQueryService.findTermIdByWord(termDataDto.getTerm());
+                if (translatedTermQueryService.existsByLanguageAndTermId(language, termId)) {
+                    translatedWord = translatedTermQueryService.findTranslatedWordByLanguageAndTermId(language, termId);
                 } else {
                     Translation translation = translate.translate(termDataDto.getMeaning(),
                             Translate.TranslateOption.sourceLanguage(SOURCE_LANGUAGE_CODE),

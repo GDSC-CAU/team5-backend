@@ -15,7 +15,6 @@ public class TeamCommandService {
 
     private final TeamRepository teamRepository;
 
-    @Transactional
     public Long createTeam(final String teamName) {
         Team team = Team.builder()
                 .name(teamName)
@@ -24,7 +23,6 @@ public class TeamCommandService {
         return teamRepository.save(team).getId();
     }
 
-    @Transactional
     public void deleteTeam(final Long teamId) {
         teamRepository.deleteById(teamId);
         log.info("채팅방 {} 삭제하기", teamId);

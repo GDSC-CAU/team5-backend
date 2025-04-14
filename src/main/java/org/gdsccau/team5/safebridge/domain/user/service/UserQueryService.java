@@ -15,12 +15,10 @@ public class UserQueryService {
 
     private final UserRepository userRepository;
 
-    @Transactional(readOnly = true)
     public User findByUserId(final Long userId) {
         return userRepository.findById(userId).orElse(null);
     }
 
-    @Transactional(readOnly = true)
     public Language findLanguageByUserId(final Long userId) {
         return userRepository.findLanguageByUserId(userId).orElse(Language.KOREAN);
     }

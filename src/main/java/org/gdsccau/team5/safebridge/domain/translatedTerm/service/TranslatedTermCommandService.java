@@ -15,8 +15,7 @@ public class TranslatedTermCommandService {
 
     private final TranslatedTermRepository translatedTermRepository;
 
-    @Transactional
-    public void createTranslatedTerm(final Term term, final Language language, final String word) {
-        translatedTermRepository.upsertTranslatedTerm(language.name(), word, term.getId());
+    public void createTranslatedTerm(final Long termId, final Language language, final String word) {
+        translatedTermRepository.upsertTranslatedTerm(language.name(), word, termId);
     }
 }

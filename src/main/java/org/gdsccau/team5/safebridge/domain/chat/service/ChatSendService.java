@@ -100,8 +100,8 @@ public class ChatSendService {
     private void createTranslatedTerm(final Language language, final TermDto.CreateTranslatedTermEntityDto data) {
         String isNewTermKey = language + ":" + data.getWord();
         if (translatedTermCache.asMap().putIfAbsent(isNewTermKey, true) == null) {
-            Term term = termQueryService.findTermByWord(data.getWord());
-            translatedTermCommandService.createTranslatedTerm(term, data.getLanguage(), data.getTranslatedWord());
+            Long termId = termQueryService.findTermIdByWord(data.getWord());
+            translatedTermCommandService.createTranslatedTerm(termId, data.getLanguage(), data.getTranslatedWord());
         }
     }
 
