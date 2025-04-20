@@ -1,64 +1,60 @@
 package org.gdsccau.team5.safebridge.domain.team.facade;
 
-import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.gdsccau.team5.safebridge.domain.team.dto.request.TeamRequestDto.TeamCreateRequestDto;
 import org.gdsccau.team5.safebridge.domain.team.dto.response.TeamResponseDto.TeamDataDto;
-import org.gdsccau.team5.safebridge.domain.team.entity.Team;
-import org.gdsccau.team5.safebridge.domain.team.service.TeamCheckService;
-import org.gdsccau.team5.safebridge.domain.team.service.TeamService;
-import org.gdsccau.team5.safebridge.domain.user.entity.User;
-import org.gdsccau.team5.safebridge.domain.user.service.UserCheckService;
-import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamCheckService;
-import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamService;
+import org.gdsccau.team5.safebridge.domain.team.event.TeamCreateEvent;
+import org.gdsccau.team5.safebridge.domain.team.event.TeamDeleteEvent;
+import org.gdsccau.team5.safebridge.domain.team.event.TeamJoinEvent;
+import org.gdsccau.team5.safebridge.domain.team.event.TeamLeaveEvent;
+import org.gdsccau.team5.safebridge.domain.team.service.TeamCommandService;
+import org.gdsccau.team5.safebridge.domain.team.service.TeamQueryService;
+import org.gdsccau.team5.safebridge.domain.userTeam.service.UserTeamCommandService;
+import org.gdsccau.team5.safebridge.domain.userTeam.service.UserTeamQueryService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
 public class TeamFacade {
 
-    private final TeamService teamService;
-    private final TeamCheckService teamCheckService;
-    private final UserCheckService userCheckService;
-    private final UserTeamService userTeamService;
-    private final UserTeamCheckService userTeamCheckService;
-    private final RedisManager redisManager;
+    private final TeamCommandService teamCommandService;
+    private final TeamQueryService teamQueryService;
+    private final UserTeamCommandService userTeamCommandService;
+    private final UserTeamQueryService userTeamQueryService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public void createTeam(final TeamCreateRequestDto requestDto) {
-        List<User> users = requestDto.getUserIds().stream()
-                .map(userCheckService::findByUserId)
-                .toList();
-        Team team = teamService.createTeam(requestDto.getName());
-        users.forEach(
-                user -> {
-                    redisManager.initRedis(user.getId(), team.getId());
-                    userTeamService.createUserTeam(user, team);
-                }
-        );
+        Long teamId = teamCommandService.createTeam(requestDto.getName());
+        userTeamCommandService.batchInsertUserTeam(requestDto.getUserIds(), teamId);
+        eventPublisher.publishEvent(new TeamCreateEvent(this, requestDto.getUserIds(), teamId));
     }
 
     @Transactional
     public void deleteTeam(final Long teamId) {
-        userTeamCheckService.findAllUserIdByTeamId(teamId)
-                .forEach(userId -> redisManager.updateRedisWhenDelete(userId, teamId));
-        teamService.deleteTeam(teamId);
+        teamCommandService.deleteTeam(teamId);
+        List<Long> userIds = userTeamQueryService.findAllUserIdByTeamId(teamId);
+        eventPublisher.publishEvent(new TeamDeleteEvent(this, userIds, teamId));
     }
 
     @Transactional
-    public TeamDataDto joinTeam(final Long teamId, final Long userId) {
-        String teamName = teamCheckService.findNameByTeamId(teamId);
-        int numberOfUsers = userTeamCheckService.countNumOfUsersByTeamId(teamId);
-        redisManager.updateRedisWhenJoin(userId, teamId);
-        return teamService.joinTeam(teamName, numberOfUsers);
+    public TeamDataDto joinTeam(final Long userId, final Long teamId) {
+        String teamName = teamQueryService.findNameByTeamId(teamId);
+        int numberOfUsers = userTeamQueryService.countNumOfUsersByTeamId(teamId);
+        userTeamCommandService.updateInRoomWhenJoin(userId, teamId);
+        TeamDataDto teamDataDto = teamCommandService.joinTeam(teamName, numberOfUsers);
+        eventPublisher.publishEvent(new TeamJoinEvent(this, userId, teamId));
+        return teamDataDto;
     }
 
     @Transactional
-    public void leaveTeam(final Long teamId, final Long userId) {
-        userTeamService.updateAccessDate(userId, teamId);
-        redisManager.updateRedisWhenLeave(userId, teamId);
-        teamService.leaveTeam(teamId, userId);
+    public void leaveTeam(final Long userId, final Long teamId) {
+        userTeamCommandService.updateWhenLeave(userId, teamId);
+        teamCommandService.leaveTeam(teamId, userId);
+        eventPublisher.publishEvent(new TeamLeaveEvent(this, userId, teamId));
     }
 }

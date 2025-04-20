@@ -1,27 +1,28 @@
 package org.gdsccau.team5.safebridge.domain.chat.service;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.gdsccau.team5.safebridge.common.term.Language;
 import org.gdsccau.team5.safebridge.common.term.TermManager;
 import org.gdsccau.team5.safebridge.domain.chat.converter.ChatConverter;
-import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataDto;
+import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataWithNewChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TranslatedDataDto;
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
 import org.gdsccau.team5.safebridge.domain.team.dto.response.TeamResponseDto.TeamListDto;
-import org.gdsccau.team5.safebridge.domain.team.service.TeamCheckService;
-import org.gdsccau.team5.safebridge.domain.term.service.TermCheckService;
-import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermCheckService;
-import org.gdsccau.team5.safebridge.domain.translation.service.TranslationCheckService;
-import org.gdsccau.team5.safebridge.domain.translation.service.TranslationService;
-import org.gdsccau.team5.safebridge.domain.user_team.service.UserTeamCheckService;
+import org.gdsccau.team5.safebridge.domain.team.service.TeamQueryService;
+import org.gdsccau.team5.safebridge.domain.term.dto.TermDto;
+import org.gdsccau.team5.safebridge.domain.term.entity.Term;
+import org.gdsccau.team5.safebridge.domain.term.service.TermQueryService;
+import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermCommandService;
+import org.gdsccau.team5.safebridge.domain.translation.service.TranslationCommandService;
+import org.gdsccau.team5.safebridge.domain.userTeam.service.UserTeamQueryService;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -34,85 +35,92 @@ public class ChatSendService {
     private static final String TEAMS_SUB_URL = "/sub/teams/";
     private static final String TRANSLATE_SUB_URL = "/sub/translate/";
 
-    private final TranslationService translationService;
-    private final TranslationCheckService translationCheckService;
-    private final TranslatedTermCheckService translatedTermCheckService;
-    private final TermCheckService termCheckService;
-    private final TeamCheckService teamCheckService;
-    private final UserTeamCheckService userTeamCheckService;
+    private final TranslationCommandService translationCommandService;
+    private final TermQueryService termQueryService;
+    private final TranslatedTermCommandService translatedTermCommandService;
+    private final TeamQueryService teamQueryService;
+    private final UserTeamQueryService userTeamQueryService;
     private final SimpMessagingTemplate messagingTemplate;
     private final TermManager termManager;
     private final RedisManager redisManager;
+    private final Cache<String, Boolean> translatedTermCache = Caffeine.newBuilder()
+            .expireAfterWrite(10, TimeUnit.SECONDS)
+            .build();
+    private final Cache<String, Boolean> translationCache = Caffeine.newBuilder()
+            .expireAfterWrite(10, TimeUnit.SECONDS)
+            .build();
+    private final Cache<String, CompletableFuture<TranslatedDataDto>> translationAPICache = Caffeine.newBuilder()
+            .expireAfterWrite(10, TimeUnit.SECONDS)
+            .build();
 
-    public void sendChatMessage(final TermDataWithNewChatDto result, final String name, final Chat chat,
-                                final Long teamId) {
+    public void sendChatMessage(final TermDataWithNewChatDto result, final String name,
+                                final ChatDto.ChatDetailDto chatDetailDto, final Long teamId) {
         messagingTemplate.convertAndSend(CHAT_SUB_URL + teamId,
-                ChatConverter.toChatResponseDto(name, chat, result.getTerms()));
+                ChatConverter.toChatResponseDto(name, chatDetailDto, result.getTerms()));
     }
 
-    public void sendTranslatedMessage(final TermDataWithNewChatDto result, final Language language, final Chat chat,
-                                      final Long teamId, final Long userId) {
-        // TODO 이미 번역되었다면 (같은 문장, 다른 사람, 같은 언어) 번역 API를 호출하지 않는다.
-        if (translationCheckService.isTranslationExists(chat.getId(), language)) {
-            Map<String, String> wordZip = new HashMap<>();
-
-            List<String> words = result.getTerms().stream()
-                    .map(TermDataDto::getTerm)
-                    .toList();
-            for (String word : words) {
-                Long termId = termCheckService.findTermIdByWord(word);
-                String translatedWord = translatedTermCheckService.findTranslatedTermByLanguageAndTermId(language,
-                        termId);
-                wordZip.put(word, translatedWord);
-            }
-            String translatedText = translationCheckService.findTranslatedTextByChatIdAndLanguage(chat.getId(),
-                    language);
+    public void sendTranslatedMessage(final TermDataWithNewChatDto result, final Language language,
+                                      final Long chatId, final Long teamId, final Long userId) {
+        String translationCacheKey = language + ":" + chatId;
+        CompletableFuture<TranslatedDataDto> future = translationAPICache.get(translationCacheKey, key ->
+                termManager.translate(result.getNewChat(), result.getTerms(), language));
+        future.thenAccept(dto -> {
+            dto.getTtSet().forEach(data -> createTranslatedTerm(language, data));
+            createTranslation(language, dto, chatId);
             messagingTemplate.convertAndSend(TRANSLATE_SUB_URL + teamId + "/" + userId,
-                    ChatConverter.toTranslatedTextResponseDto(translatedText, wordZip, chat.getId()));
-        } else {
-            CompletableFuture<TranslatedDataDto> translatedText = termManager.translate(
-                    result.getNewChat(), result.getTerms(), language);
-            translatedText.thenAccept(dto -> {
-                translationService.createTranslation(dto.getTranslatedText(), language, chat.getId());
-                messagingTemplate.convertAndSend(TRANSLATE_SUB_URL + teamId + "/" + userId,
-                        ChatConverter.toTranslatedTextResponseDto(dto.getTranslatedText(), dto.getTranslatedTerms(),
-                                chat.getId()));
-            });
-            // TODO 예외처리
-        }
+                    ChatConverter.toTranslatedTextResponseDto(dto.getTranslatedText(), dto.getTranslatedTerms(), chatId));
+        });
+        // TODO 비동기 처리에 대한 예외처리
     }
 
-    public void sendTeamData(final Chat chat, final Long teamId, final Long userId) {
-        TeamListDto teamListDto = this.refreshRedisValue(chat, teamId, userId);
+    public void sendTeamData(final ChatDto.ChatDetailDto chatDetailDto, final Long teamId, final Long userId) {
+        TeamListDto teamListDto = this.refreshRedisValue(chatDetailDto, teamId, userId);
         messagingTemplate.convertAndSend(TEAMS_SUB_URL + userId, teamListDto);
     }
 
-    private TeamListDto refreshRedisValue(final Chat chat, final Long teamId, final Long userId) {
+    private TeamListDto refreshRedisValue(final ChatDto.ChatDetailDto chatDetailDto, final Long teamId, final Long userId) {
         String inRoomKey = redisManager.getInRoomKey(userId, teamId);
         String unReadMessageKey = redisManager.getUnReadMessageKey(userId, teamId);
-        String zSetKey = redisManager.getZSetKey(userId);
+        String teamListKey = redisManager.getTeamListKey(userId);
 
-        int inRoom = redisManager.getInRoom(inRoomKey);
+        int inRoom = redisManager.getInRoomOrDefault(inRoomKey,
+                () -> userTeamQueryService.findInRoomByUserIdAndTeamId(userId, teamId));
         if (inRoom == 0) {
             redisManager.updateUnReadMessage(unReadMessageKey);
+            redisManager.updateUnReadMessageDirtySet(userId, teamId);
         }
-        redisManager.updateZSet(zSetKey, teamId, chat);
+        redisManager.updateTeamList(teamListKey, teamId, chatDetailDto.getCreatedAt());
 
-        // TODO
-        return createTeamListDto(
-                teamId, chat.getText(), chat.getCreatedAt(), redisManager.getUnReadMessage(unReadMessageKey)
+        return createTeamListDto(teamId, chatDetailDto.getText(), chatDetailDto.getCreatedAt(),
+                redisManager.getUnReadMessageOrDefault(unReadMessageKey,
+                        () -> userTeamQueryService.findUnReadMessageByUserIdAndTeamId(userId, teamId))
         );
+    }
+
+    private void createTranslatedTerm(final Language language, final TermDto.CreateTranslatedTermEntityDto data) {
+        String isNewTermKey = language + ":" + data.getWord();
+        if (translatedTermCache.asMap().putIfAbsent(isNewTermKey, true) == null) {
+            Long termId = termQueryService.findTermIdByWord(data.getWord());
+            translatedTermCommandService.createTranslatedTerm(termId, data.getLanguage(), data.getTranslatedWord());
+        }
+    }
+
+    private void createTranslation(final Language language, final TranslatedDataDto dto, final Long chatId) {
+        String isNewChatKey = language + ":" + chatId;
+        if (translationCache.asMap().putIfAbsent(isNewChatKey, true) == null) {
+            translationCommandService.createTranslation(dto.getTranslatedText(), language, chatId);
+        }
     }
 
     private TeamListDto createTeamListDto(final Long teamId, final String lastChat,
                                           final LocalDateTime lastChatTime, final int unReadMessage) {
         return TeamListDto.builder()
                 .teamId(teamId)
-                .teamName(teamCheckService.findNameByTeamId(teamId))
+                .teamName(teamQueryService.findNameByTeamId(teamId))
                 .lastChat(lastChat)
                 .lastChatTime(lastChatTime)
                 .unReadMessage(unReadMessage)
-                .numberOfUsers(userTeamCheckService.countNumOfUsersByTeamId(teamId))
+                .numberOfUsers(userTeamQueryService.countNumOfUsersByTeamId(teamId))
                 .build();
     }
 }

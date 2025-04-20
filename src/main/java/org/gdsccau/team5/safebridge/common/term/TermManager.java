@@ -5,6 +5,7 @@ import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.translate.Translate;
 import com.google.cloud.translate.TranslateOptions;
 import com.google.cloud.translate.Translation;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,19 +18,21 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+
 import lombok.extern.slf4j.Slf4j;
 import org.ahocorasick.trie.Emit;
 import org.ahocorasick.trie.Trie;
 import org.ahocorasick.trie.Trie.TrieBuilder;
-import org.gdsccau.team5.safebridge.common.redis.RedisManager;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TermDataWithNewChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto.TranslatedDataDto;
+import org.gdsccau.team5.safebridge.domain.term.dto.TermDto;
+
+import org.gdsccau.team5.safebridge.domain.term.dto.TermDto.TermPairDto;
 import org.gdsccau.team5.safebridge.domain.term.entity.Term;
-import org.gdsccau.team5.safebridge.domain.term.service.TermCheckService;
-import org.gdsccau.team5.safebridge.domain.term.service.TermService;
-import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermCheckService;
-import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermService;
+import org.gdsccau.team5.safebridge.domain.term.service.TermCacheQueryService;
+import org.gdsccau.team5.safebridge.domain.term.service.TermQueryService;
+import org.gdsccau.team5.safebridge.domain.translatedTerm.service.TranslatedTermQueryService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -63,18 +66,16 @@ public class TermManager {
 
     private static final String SOURCE_LANGUAGE_CODE = "ko";
 
-    private final RedisManager redisManager;
-    private final TermCheckService termCheckService;
-    private final TermService termService;
-    private final TranslatedTermCheckService translatedTermCheckService;
-    private final TranslatedTermService translatedTermService;
+    private final TermQueryService termQueryService;
+    private final TermCacheQueryService termCacheQueryService;
+    private final TranslatedTermQueryService translatedTermQueryService;
 
     private final Trie trie;
     private final Map<String, String> termsWithMeaning;
 
-    public TermManager(final RedisManager redisManager, final TermCheckService termCheckService,
-                       final TermService termService, final TranslatedTermCheckService translatedTermCheckService,
-                       final TranslatedTermService translatedTermService) {
+    public TermManager(final TermQueryService termQueryService,
+                       final TermCacheQueryService termCacheQueryService,
+                       final TranslatedTermQueryService translatedTermQueryService) {
         Set<String> terms = TermLoader.loadTermsOnly();
         TrieBuilder builder = Trie.builder();
         for (String term : terms) {
@@ -82,11 +83,9 @@ public class TermManager {
         }
         this.trie = builder.build();
         this.termsWithMeaning = TermLoader.loadTermsWithMeaning();
-        this.redisManager = redisManager;
-        this.termCheckService = termCheckService;
-        this.termService = termService;
-        this.translatedTermCheckService = translatedTermCheckService;
-        this.translatedTermService = translatedTermService;
+        this.termQueryService = termQueryService;
+        this.termCacheQueryService = termCacheQueryService;
+        this.translatedTermQueryService = translatedTermQueryService;
     }
 
     public TermDataWithNewChatDto query(final String chat) {
@@ -113,9 +112,10 @@ public class TermManager {
                 .build();
     }
 
-    @Async("threadPoolTaskExecutor")
+    @Async
     public CompletableFuture<TranslatedDataDto> translate(final String text, final List<TermDataDto> termDataDtos,
                                                           final Language language) {
+        log.info("채팅 번역");
         return CompletableFuture.supplyAsync(() -> {
             try (InputStream inputStream = getCredentialsStream()) {
                 GoogleCredentials credentials = ServiceAccountCredentials.fromStream(inputStream);
@@ -126,14 +126,40 @@ public class TermManager {
                 Translation translation = translate.translate(text,
                         Translate.TranslateOption.sourceLanguage(SOURCE_LANGUAGE_CODE),
                         Translate.TranslateOption.targetLanguage(language.getCode()));
-                Map<String, String> translatedTerms = this.translateTerms(translate, termDataDtos, language);
                 String translatedText = translation.getTranslatedText().replaceAll("&#39;", "'");
-                return this.createdTranslatedDataDto(translatedText, translatedTerms);
+                TermPairDto result = translateTerms(translate, termDataDtos, language);
+                return createdTranslatedDataDto(translatedText, result.getTranslatedTerms(), result.getTtSet());
             } catch (IOException e) {
                 log.error("Google Translate API 호출 중 오류 발생", e);
-                return this.createdTranslatedDataDto(null, null);
+                return createdTranslatedDataDto(null, null, null);
             }
         });
+    }
+
+    private TermPairDto translateTerms(final Translate translate, final List<TermDataDto> termDataDtos,
+                                       final Language language) {
+        Map<String, String> result = new HashMap<>();
+        Set<TermDto.CreateTranslatedTermEntityDto> ttSet = new HashSet<>();
+        termDataDtos.forEach(termDataDto -> {
+            String translatedWord = termCacheQueryService.findTerm(termDataDto.getTerm(), language);
+            if (translatedWord == null) {
+                Long termId = termQueryService.findTermIdByWord(termDataDto.getTerm());
+                if (translatedTermQueryService.existsByLanguageAndTermId(language, termId)) {
+                    translatedWord = translatedTermQueryService.findTranslatedWordByLanguageAndTermId(language, termId);
+                } else {
+                    Translation translation = translate.translate(termDataDto.getMeaning(),
+                            Translate.TranslateOption.sourceLanguage(SOURCE_LANGUAGE_CODE),
+                            Translate.TranslateOption.targetLanguage(language.getCode()));
+                    translatedWord = translation.getTranslatedText().replaceAll("&#39;", "'");
+                    ttSet.add(createDecideToCreateTermEntityDto(termDataDto, language, translatedWord));
+                }
+            }
+            result.put(termDataDto.getTerm(), translatedWord);
+        });
+        return TermPairDto.builder()
+                .translatedTerms(result)
+                .ttSet(ttSet)
+                .build();
     }
 
     private void removeDuplicatedWord(final Set<String> terms, Set<String> finalTerms) {
@@ -187,43 +213,23 @@ public class TermManager {
         return new ByteArrayInputStream(jsonContent.getBytes(StandardCharsets.UTF_8));
     }
 
-    private Map<String, String> translateTerms(final Translate translate, final List<TermDataDto> termDataDtos,
-                                               final Language language) {
-        Map<String, String> result = new HashMap<>();
-        termDataDtos.forEach(termDataDto -> {
-            // 1. Term을 가져온다.
-            Term term = termCheckService.findTermByWord(termDataDto.getTerm());
-            if (term == null) {
-                term = termService.createTerm(termDataDto.getTerm(), termDataDto.getMeaning());
-            }
-            // 2. Redis에서 번역본을 가져온다.
-            String translatedTermKey = redisManager.getTranslatedTermKey(term.getId(), language);
-            String translatedTerm =  redisManager.getTranslatedTerm(translatedTermKey);
-            // 3. Redis에 없으면 DB에서 가져온다. -> 락을 활용해 같은 요청에 대해선 락을 획득한 요청만 DB를 조회한다.
-            if (translatedTerm == null) {
-                translatedTerm = translatedTermCheckService.findTranslatedTermByLanguageAndTermId(language, term.getId());
-            }
-            // 4. DB에도 없으면 번역 API를 호출한다. (초기 1회, 불가피)
-            if (translatedTerm == null) {
-                Translation translation = translate.translate(term.getMeaning(),
-                        Translate.TranslateOption.sourceLanguage(SOURCE_LANGUAGE_CODE),
-                        Translate.TranslateOption.targetLanguage(language.getCode()));
-                translatedTerm = translation.getTranslatedText().replaceAll("&#39;", "'");
-                // 5. 번역본을 DB에 저장한다.
-                translatedTermService.createTranslatedTerm(term, language, translatedTerm);
-            }
-            // 6. Redis에 저장한다. 이 때, 이미 저장되어 있다면 TTL을 갱신한다. (Write-Through)
-            redisManager.updateTranslatedTerm(translatedTermKey, translatedTerm);
-            result.put(term.getWord(), translatedTerm);
-        });
-        return result;
-    }
-
     private TranslatedDataDto createdTranslatedDataDto(final String translatedText,
-                                                       final Map<String, String> translatedTerms) {
+                                                       final Map<String, String> translatedTerms,
+                                                       final Set<TermDto.CreateTranslatedTermEntityDto> ttSet) {
         return TranslatedDataDto.builder()
                 .translatedText(translatedText)
                 .translatedTerms(translatedTerms)
+                .ttSet(ttSet)
+                .build();
+    }
+
+    private TermDto.CreateTranslatedTermEntityDto createDecideToCreateTermEntityDto(final TermDataDto termDataDto,
+                                                                                    final Language language,
+                                                                                    final String translatedWord) {
+        return TermDto.CreateTranslatedTermEntityDto.builder()
+                .word(termDataDto.getTerm())
+                .language(language)
+                .translatedWord(translatedWord)
                 .build();
     }
 }

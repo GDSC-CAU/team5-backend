@@ -3,11 +3,11 @@ spring:
     import: optional:file:.env[.properties]
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${MYSQL_DB_HOST}:${MYSQL_DB_PORT}/${MYSQL_DB_NAME}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    url: jdbc:mysql://${MYSQL_DB_HOST}:${MYSQL_DB_PORT}/${MYSQL_DB_NAME}?rewriteBatchedStatements=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: ${MYSQL_DB_USER}
     password: ${MYSQL_DB_PASS}
   jpa:
-    open-in-view: true
+    open-in-view: false
     hibernate:
       ddl-auto: update
     show-sql: true
@@ -21,6 +21,10 @@ spring:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
       timeout: 6
+
+  threads:
+    virtual:
+      enabled: true
 
 google:
   service-account:
@@ -42,6 +46,7 @@ logging:
     file: "[%d{yyyy-MM-dd HH:mm:ss.SSS}][%-5level][%logger.%method:line%line] - %msg%n"
   level:
     com.example.log: debug
+    org.springframework.jdbc: debug
   logback:
     rollingpolicy:
       max-file-size: 10MB

@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gdsccau.team5.safebridge.common.code.success.ChatSuccessCode;
 import org.gdsccau.team5.safebridge.common.response.ApiResponse;
+import org.gdsccau.team5.safebridge.domain.chat.dto.ChatDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.request.ChatRequestDto.ChatMessageRequestDto;
 import org.gdsccau.team5.safebridge.domain.chat.dto.response.ChatResponseDto.WorkResponseDto;
 import org.gdsccau.team5.safebridge.domain.chat.entity.Chat;
@@ -19,15 +20,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@Slf4j
 public class ChatController {
 
     private final ChatFacade chatFacade;
 
     @MessageMapping("/chats/teams/{teamId}")
     public void chat(final ChatMessageRequestDto chatRequestDto, @DestinationVariable final Long teamId) {
-        Chat chat = chatFacade.createChat(chatRequestDto, teamId);
-        chatFacade.chat(chatRequestDto, teamId, chat);
+        ChatDto.ChatDetailDto chatDetailDto = chatFacade.createChat(chatRequestDto, teamId);
+        chatFacade.chat(chatRequestDto, teamId, chatDetailDto);
     }
 
     @GetMapping("/chats/teams/{teamId}")
@@ -35,7 +35,7 @@ public class ChatController {
             @PathVariable(name = "teamId") final Long teamId,
             @RequestParam(name = "userId") final Long userId,
             @RequestParam(name = "cursorId", required = false) final Long cursorId,
-            @RequestParam(name = "role") final String role) {
+            @RequestParam(name = "role", defaultValue = "MEMBER") final String role) {
         return ApiResponse.onSuccess(ChatSuccessCode.FIND_CHAT_IN_TEAM,
                 chatFacade.findAllChats(role, cursorId, userId, teamId));
     }
