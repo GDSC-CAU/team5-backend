@@ -25,8 +25,7 @@ public class TermCacheCommandService {
 
     @CachePut(value = "findCount", key = "#word + ':' + #language.name()")
     public String updateFindCount(final String word, final Language language) {
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMddHH");
-        String currentTime = LocalDateTime.now().format(dateTimeFormatter);
+        String currentTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHH"));
         String currentValue = Objects.requireNonNull(cacheManager.getCache(CacheType.TERM_FIND_COUNT.getCacheName()))
                 .get(word + ":" + language.toString(), String.class);
         int newFindCount = 1;

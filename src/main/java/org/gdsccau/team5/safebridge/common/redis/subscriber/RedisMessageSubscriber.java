@@ -36,9 +36,13 @@ public class RedisMessageSubscriber implements MessageListener {
     @Override
     public void onMessage(Message message, byte[] pattern) {
         log.info("Redis Subscribe !!");
+
+        // Redis에서 Hot Term에 대한 우선순위 계산
         Map<String, Double> hotTermMap = calculateHotTerm();
         Map<String, List<Language>> wordLanguageMap = getWordLanguageMap(hotTermMap);
         List<TermIdAndWordDto> termIdAndWordDtos = getAllTermIdAndWords(hotTermMap);
+
+        // Local Cache에 새로운 Hot Term 업데이트
         updateHotTermInLocalCache(wordLanguageMap, termIdAndWordDtos);
         log.info("Hot Term Warming !!");
     }
@@ -120,7 +124,6 @@ public class RedisMessageSubscriber implements MessageListener {
                 CacheType.HOT_TERM.getCacheName());
         deleteHotTermInLocalCache(cacheEntriesForCount);
 
-        // TODO IN 절로 쿼리 1번에 다 가져오고 싶은데, 쉽지 않네;
         termIdAndWordDtos.forEach(dto -> {
             Long termId = dto.getTermId();
             String word = dto.getWord();
