@@ -72,10 +72,12 @@ public class TermManager {
 
     private final Trie trie;
     private final Map<String, String> termsWithMeaning;
+    private final Translate translate;
 
     public TermManager(final TermQueryService termQueryService,
                        final TermCacheQueryService termCacheQueryService,
-                       final TranslatedTermQueryService translatedTermQueryService) {
+                       final TranslatedTermQueryService translatedTermQueryService,
+                       final Translate translate) {
         Set<String> terms = TermLoader.loadTermsOnly();
         TrieBuilder builder = Trie.builder();
         for (String term : terms) {
@@ -86,6 +88,7 @@ public class TermManager {
         this.termQueryService = termQueryService;
         this.termCacheQueryService = termCacheQueryService;
         this.translatedTermQueryService = translatedTermQueryService;
+        this.translate = translate;
     }
 
     public TermDataWithNewChatDto query(final String chat) {
@@ -115,25 +118,20 @@ public class TermManager {
     @Async
     public CompletableFuture<TranslatedDataDto> translate(final String text, final List<TermDataDto> termDataDtos,
                                                           final Language language) {
-        log.info("채팅 번역");
-        return CompletableFuture.supplyAsync(() -> {
-            try (InputStream inputStream = getCredentialsStream()) {
-                GoogleCredentials credentials = ServiceAccountCredentials.fromStream(inputStream);
-                Translate translate = TranslateOptions.newBuilder()
-                        .setCredentials(credentials)
-                        .build()
-                        .getService();
-                Translation translation = translate.translate(text,
-                        Translate.TranslateOption.sourceLanguage(SOURCE_LANGUAGE_CODE),
-                        Translate.TranslateOption.targetLanguage(language.getCode()));
-                String translatedText = translation.getTranslatedText().replaceAll("&#39;", "'");
-                TermPairDto result = translateTerms(translate, termDataDtos, language);
-                return createdTranslatedDataDto(translatedText, result.getTranslatedTerms(), result.getTtSet());
-            } catch (IOException e) {
-                log.error("Google Translate API 호출 중 오류 발생", e);
-                return createdTranslatedDataDto(null, null, null);
-            }
-        });
+        try {
+            log.info("채팅 번역");
+            Translation translation = translate.translate(text,
+                    Translate.TranslateOption.sourceLanguage(SOURCE_LANGUAGE_CODE),
+                    Translate.TranslateOption.targetLanguage(language.getCode()));
+            String translatedText = translation.getTranslatedText().replaceAll("&#39;", "'");
+            TermPairDto result = translateTerms(translate, termDataDtos, language);
+            return CompletableFuture.completedFuture(
+                    createdTranslatedDataDto(translatedText, result.getTranslatedTerms(), result.getTtSet())
+            );
+        } catch (Exception e) {
+            log.error("Google Translate API 호출 중 오류 발생", e);
+            return CompletableFuture.completedFuture(createdTranslatedDataDto("번역 실패", Map.of(), Set.of()));
+        }
     }
 
     private TermPairDto translateTerms(final Translate translate, final List<TermDataDto> termDataDtos,
